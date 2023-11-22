@@ -10,10 +10,16 @@ plt.rcParams['agg.path.chunksize'] = 10000
 import numpy as np
 
 import pandas as pd
-def getSpectrumAnalysis(file_csv, gain_dB = 0):
+def getSpectrumAnalysis(file_csv, isDataIndB = True, inputImpedance_Ohm = 50):
+    if "mv" in file_csv:
+        isDataIndB = False
+    
     data = pd.read_csv(file_csv, low_memory=False, header= None)
     array = data.to_numpy()
-    return array[:,0], 10**((array[:,1] - gain_dB) / 10) * 0.001
+    if isDataIndB:
+        return array[:,0], np.sqrt(10**((array[:,1]) / 10 - 3) * inputImpedance_Ohm)
+    else:
+        return array[:,0], array[:,1] * 0.001
 
 def getPowerSpectrum(noise, fs, durata):
     noise = noise - np.mean(noise)
@@ -34,28 +40,22 @@ def getPowerSpectrum(noise, fs, durata):
     return frequencies[:plotLength], noise_fft[:plotLength] * 2
     
 def plotPowerSpectrum(frequencies, spectrum, logPlot = True, linearPlot = True):
-    if(logPlot):
-        plt.figure(figsize=(15, 10))
-        if(frequencies.__class__ == list):
-            for i in range(len(frequencies)):
-                plt.plot(frequencies[i], spectrum[i], alpha=0.7)   
-        else:
-            plt.plot(frequencies, spectrum)
-        # plt.ylim(1*10**(-8), 1*10**(-2))
-        plt.xscale('log')
-        plt.yscale('log')
-        plt.ylabel("V/sqrt(Hz)")
-        plt.xlabel("Hz")
+    bools = [logPlot, linearPlot]
+    setLogScale = [True, False]
     
-    if(linearPlot):
-        plt.figure(figsize=(15, 10))
-        
-        if(frequencies.__class__ == list):
-            for i in range(len(frequencies)):
-                plt.plot(frequencies[i], spectrum[i], alpha=0.7)   
-        else:
-            plt.plot(frequencies, spectrum)
-        # plt.ylim(0, 25*10**(-6))
-        plt.ylabel("V/sqrt(Hz)")
-        plt.xlabel("Hz")
-    
+    for i in range(len(bools)):
+        if bools[i]:
+            plt.figure(figsize=(15, 10))
+            if(frequencies.__class__ == list):
+                print(frequencies[0][0:10])
+                for j in range(len(frequencies)):
+                    plt.plot(frequencies[j], spectrum[j], alpha=0.7)   
+            else:
+                plt.plot(frequencies, spectrum)
+            # plt.ylim(1*10**(-8), 1*10**(-2))
+            if setLogScale[i]:
+                plt.xscale('log')
+                plt.yscale('log')
+            plt.ylabel("V/sqrt(Hz)")
+            plt.xlabel("Hz")
+            

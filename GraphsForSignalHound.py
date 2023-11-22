@@ -13,9 +13,10 @@ from tkinter import filedialog
 tkinter.Tk().withdraw() # prevents an empty tkinter window from appearing
 X = list()
 Y = list()
-for i in range(4):
+for i in range(2):
     folder_path = filedialog.askopenfilename(initialdir = "C:/Documenti/SignalHound", filetypes=[("csv files", "*.csv")])
-    x, y = getSpectrumAnalysis(folder_path, gain_dB= -20)
+    x, y = getSpectrumAnalysis(folder_path)
     X.append(x)
     Y.append(y)
+    
 sa.plotPowerSpectrum(X,Y, linearPlot=False)
