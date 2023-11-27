@@ -8,7 +8,7 @@ Created on Tue Nov 21 09:22:28 2023
 import matplotlib.pyplot as plt
 plt.rcParams['agg.path.chunksize'] = 10000
 import numpy as np
-
+import os
 import pandas as pd
 
 import scipy.integrate as integrate
@@ -68,24 +68,27 @@ def getNSD(noise, fs, durata):
     # multiply the spectrum by 2, since half of its energy is in the negative frequencies
     return frequencies[:plotLength], noise_fft[:plotLength] * 2
     
-def plotNSD(frequencies, spectrum, logPlot = True, linearX=False, linearY=False):
+def plotNSD(frequencies, spectrum, paths = None, logPlot = True, linearX=False, linearY=False):
     
     #let's work with a list of curves to plot
     if frequencies.__class__ != list:
         frequencies = [frequencies]
         spectrum = [spectrum]
     
-    for j in range(len(frequencies)):
-        f2 = InterpolatedUnivariateSpline(frequencies[j], spectrum[j]**2, k=1)
-        result4 = np.sqrt(f2.integral(frequencies[j][0], frequencies[j][-1]))
-        # non serve moltiplicare *2 a causa della partizione tra i 50Ohm, è già fatta internamente
-        print("V_rms " + str(j) +": " + str(result4))
+    if paths == None:
+        paths = list(map(str, list(range(len(frequencies)))))
+    # for j in range(len(frequencies)):
+    #     f2 = InterpolatedUnivariateSpline(frequencies[j], spectrum[j]**2, k=1)
+    #     result4 = np.sqrt(f2.integral(frequencies[j][0], frequencies[j][-1]))
+    #     # non serve moltiplicare *2 a causa della partizione tra i 50Ohm, è già fatta internamente
+    #     print("V_rms " + str(j) +": " + str(result4))
     
     
     plt.figure(figsize=(15, 10))
     for j in range(len(frequencies)):
-        plt.plot(frequencies[j], spectrum[j], alpha=0.7) 
-            
+        plt.plot(frequencies[j], spectrum[j], alpha=0.7, label = os.path.basename(paths[j]).split('/')[-1])
+
+    plt.legend(loc="upper right")            
     if not linearX:
         plt.xscale('log')
     if not linearY:
@@ -94,4 +97,32 @@ def plotNSD(frequencies, spectrum, logPlot = True, linearX=False, linearY=False)
     plt.xlabel("Hz")
     
     # plt.show()
-            
+    
+#for sweeps in different frequency ranges and different binWidth
+def combineTraces(x1, y1, x2, y2):
+    if x1[0] < x2[0]:
+        x_primo = x1
+        x_secondo = x2
+        y_primo = y1
+        y_secondo = y2
+    else:
+        x_primo = x2
+        x_secondo = x1
+        y_primo = y2
+        y_secondo = y1
+    
+    index = [i for i in range(len(x_secondo)) if x_secondo[i] < x_primo[-1]][-1]
+    x_secondo = x_secondo[index:]
+    y_secondo = y_secondo[index:]
+    
+    X = np.concatenate([x_primo, x_secondo])
+    Y = np.concatenate([y_primo, y_secondo])
+    
+    return X, Y
+    
+# x1 = [0,1]
+# y1 =  [3,4]
+# x2 = [-1,4,5]
+# y2 =  [0,2,2]
+# x,y = combineTraces(x1, y1, x2, y2)
+# plotNSD([x1,x2,x], [y1,y2,y], linearX=True, linearY=True)
