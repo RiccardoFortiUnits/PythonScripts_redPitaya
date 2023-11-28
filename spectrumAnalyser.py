@@ -18,11 +18,14 @@ from scipy.interpolate import InterpolatedUnivariateSpline
     #V: measure of rpm tension emitted by the source (on the sum of its output impedance 
     #and the input one of the spectrum analyzer)
 def dBm_to_V_sqrtHz(y, inputImpedance_Ohm = 50, outputImpedance_Ohm = 50):
-    return np.sqrt(10**(y / 10 - 3) * inputImpedance_Ohm) * \
+    return np.sqrt(10**(y / 10 - 3) * inputImpedance_Ohm) / 2 * \
         (outputImpedance_Ohm + inputImpedance_Ohm) / inputImpedance_Ohm
 
+def Volt_to_Ampere(y, Gain_Ohm):
+    return y / Gain_Ohm
+
 #the data in the file is already in V/sqrt(Hz), and it doesn't need any adjustment (why 
-    #can't every other tool do the same?it doesn't seem like a hard thing to ask, that 
+    #can't every other tool do the same? It doesn't seem like a hard thing to ask, that 
     #what you measure is correct...)
 def getSpectrumAnalysis_ltSpice(file_csv, isDataIndB = True):
     data = pd.read_csv(file_csv, low_memory=False, delimiter="\t")
