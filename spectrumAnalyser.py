@@ -20,9 +20,19 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 def dBm_to_V_sqrtHz(y, inputImpedance_Ohm = 50, outputImpedance_Ohm = 50):
     return np.sqrt(10**(y / 10 - 3) * inputImpedance_Ohm) / 2 * \
         (outputImpedance_Ohm + inputImpedance_Ohm) / inputImpedance_Ohm
+        
+#V: tension erogated by the source (on the load outputImpedance + inputImpedance)
+#dBm: power read on the load inputImpedance
+def V_sqrtHz_to_dBm(y, inputImpedance_Ohm = 50, outputImpedance_Ohm = 50):
+    y *= inputImpedance_Ohm / (outputImpedance_Ohm + inputImpedance_Ohm)
+    return 10 * np.log10(y ** 2 / inputImpedance_Ohm)
 
 def Volt_to_Ampere(y, Gain_Ohm):
     return y / Gain_Ohm
+
+
+def Volt_to_LightPower(y, Gain_Ohm, responsivity):
+    return y / Gain_Ohm / responsivity
 
 #the data in the file is already in V/sqrt(Hz), and it doesn't need any adjustment (why 
     #can't every other tool do the same? It doesn't seem like a hard thing to ask, that 
@@ -41,8 +51,8 @@ def getSpectrumAnalysis_signalHound(file_csv, isDataIndB = True, outputImpedance
     array = data.to_numpy()
     binBand = 1/(array[1,0] - array[0,0])
     pg = 10*np.log10(len(array[:,0]))
-    print(binBand)
-    print("pg: " + str(pg) + "  | " + str(len(array[:,0])))
+    # print(binBand)
+    # print("pg: " + str(pg) + "  | " + str(len(array[:,0])))
     
     
     if isDataIndB:
@@ -71,6 +81,20 @@ def getNSD(noise, fs, durata):
     # multiply the spectrum by 2, since half of its energy is in the negative frequencies
     return frequencies[:plotLength], noise_fft[:plotLength] * 2
     
+def getRMS(y, minFreq = -1, maxFreq = -1, x = None):
+    if minFreq == -1 or maxFreq == -1 or x is None:
+        start = 0
+        end = len(y)
+        dx = 1
+    else:
+        start = next(i for i in range(len(y)) if x[i] >= minFreq)
+        end = next(i for i in range(len(y) - 1, -1, -1) if x[i] <= maxFreq)
+        dx = (x[1] - x[0])
+    sq = y[start : end] ** 2 * dx
+    
+    return np.sqrt(np.sum(sq))
+        
+
 def plotNSD(frequencies, spectrum, paths = None, logPlot = True, linearX=False, linearY=False):
     
     #let's work with a list of curves to plot
@@ -89,6 +113,7 @@ def plotNSD(frequencies, spectrum, paths = None, logPlot = True, linearX=False, 
     
     plt.figure(figsize=(15, 10))
     for j in range(len(frequencies)):
+    # for j in range(len(frequencies)-1,-1,-1):
         plt.plot(frequencies[j], spectrum[j], alpha=0.7, label = os.path.basename(paths[j]).split('/')[-1])
 
     plt.legend(loc="upper right")            
@@ -114,7 +139,7 @@ def combineTraces(x1, y1, x2, y2):
         y_primo = y2
         y_secondo = y1
     
-    index = [i for i in range(len(x_secondo)) if x_secondo[i] < x_primo[-1]][-1]
+    index = next(i for i in range(len(x_secondo)) if x_secondo[i] > x_primo[-1])
     x_secondo = x_secondo[index:]
     y_secondo = y_secondo[index:]
     
