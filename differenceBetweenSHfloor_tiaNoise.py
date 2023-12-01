@@ -9,6 +9,15 @@ Created on Tue Nov 28 09:53:16 2023
 """
 Created on Tue Nov 21 11:29:48 2023
 
+script that compares the spectral density of 
+    the analyzer noise floor
+    the measurement of the tia circuit (done with the same analyzer)
+    the expected NSD calculated in spice
+    
+be sure that these 3 measuerements are done on the same frequency range
+
+the spice simulation we were using is not the best, so we manually added some elements to this noise
+
 @author: lastline
 """
 import spectrumAnalyser as sa
@@ -19,18 +28,40 @@ from tkinter import filedialog
 import numpy as np
 import lecroyInterface
 
-tkinter.Tk().withdraw() # prevents an empty tkinter window from appearing
+#-----------------------------MODIFY------------------------
+
+noiseFloorPath      = "C:\\Users\\lastline\\Documents\\SignalHound\\10-11 kHz\\floor.csv"
+tiaNoisePath        = "C:\\Users\\lastline\\Documents\\SignalHound\\10-11 kHz\\tia_diode.csv"
+simulatedNoisePath  = "C:\\Users\\lastline\\Documents\\SignalHound\\10-11 kHz\\tia_noise.txt"
+
+folder_path = [noiseFloorPath, tiaNoisePath, simulatedNoisePath]
+
+#feedback resistor    
+tiaGain_Ohm = 5600
+
+#in which metrics should the output be? V/√Hz (voltage), A/√Hz (current), W/√Hz (NEP)
+outputDimensions                =          "voltage"     #"NEP" # "current" # "voltage"
+
+diodeResponsitivity = 0.3
+
+#noise to add to the spice simulation (expressed in V/√Hz)
+simulationAddictions_V_sqrtHz = [
+    (7e-9),                                             #input current of the OPA656
+    np.sqrt(2 * 1.602e-19 * 0.35e-9) * tiaGain_Ohm      #photodiode shot noise (multiplied by the gain, so that it is in V/√Hz)
+    ]
+
+#----------------------------KEEP AS IS--------------------
+
+def nextDoneRight(expression, returnIfExpressionIsEmpty = None):
+    try:
+        return next(expression)
+    except StopIteration:
+        return returnIfExpressionIsEmpty
+
+tkinter.Tk().withdraw()
 X = list()
 Y = list()
-# folder_path = ["C:\\Users\\lastline\\Documents\\SignalHound\\1-25MHz_oldTIA\\floor.csv",\
-#                "C:\\Users\\lastline\\Documents\\SignalHound\\1-25MHz_oldTIA\\tia_diode_5k_newer.csv",\
-#                "C:\\Users\\lastline\\Documents\\SignalHound\\1-25MHz_oldTIA\\tia_noise_5_6K.txt"]
-folder_path = ["C:\\Users\\lastline\\Documents\\SignalHound\\1-25MHz\\floor_new.csv",\
-               "C:\\Users\\lastline\\Documents\\SignalHound\\10-15 kHz\\tia_diode.csv",\
-               "C:\\Users\\lastline\\Documents\\SignalHound\\1-25MHz\\tia_noise.txt"]
-    
-tiaGain_Ohm = 5600
-outputDimensions                =          "voltage"     #"NEP" # "current" # "voltage"
+RMS = list()
 
 for path in folder_path:
     extension = os.path.splitext(path)[-1]
@@ -41,18 +72,20 @@ for path in folder_path:
     if extension == '.trc':
         data, samplingFreq, time = lecroyInterface.getDataFromBinaryFile(path)
         x,y = sa.getNSD(data, samplingFreq, time)
-        
-    #if extension == '.ini':
-        #do nothing
             
-    if path == "C:\\Users\\lastline\\Documents\\SignalHound\\10-15 kHz\\tia_noise.txt":
-        y = np.sqrt(y ** 2 + (7e-9) ** 2 + 2 * 1.602e-19 * 0.35e-9 * 5600**2)
-        ind = next(i for i in range(len(x)) if x[i] > 11000)
-        x = x[:ind-1]
-        y = y[:ind-1]
+    if path == simulatedNoisePath:
+        #add some other noise
+        squareNoiseToAdd = sum(el **2 for el in simulationAddictions_V_sqrtHz)
+        y = np.sqrt(y ** 2 + squareNoiseToAdd)
+        
+        #remove data before and after the frequency range
+        indMax = nextDoneRight((i for i in range(len(x)) if x[i] > X[0][-1]), len(x))
+        indMin = nextDoneRight((i for i in range(len(x) -1, -1, -1) if x[i] < X[0][0]), -1)
+        x = x[indMin + 1 : indMax-1]
+        y = y[indMin + 1 : indMax-1]
     
     if outputDimensions == "NEP":
-        y = sa.Volt_to_LightPower(y, tiaGain_Ohm, 0.3)
+        y = sa.Volt_to_LightPower(y, tiaGain_Ohm, diodeResponsitivity)
     if outputDimensions == "current":
         y = sa.Volt_to_Ampere(y, tiaGain_Ohm)
     #if outputDimensions == "voltage":
@@ -60,17 +93,22 @@ for path in folder_path:
     
     X.append(x)
     Y.append(y)
-    
-    print(os.path.basename(path).split('/')[-1] + "\t\tRMS: " + str(sa.getRMS(y, x = x, minFreq=10000, maxFreq=100000)))
-    
-# difference = np.sqrt(np.maximum(Y[1] **2 - Y[0] **2, 1e-20))
-difference = np.sqrt(np.abs((Y[1] **2 - Y[0] **2)))
+    RMS.append(sa.getRMS(y, x = x, minFreq=X[0][0], maxFreq=X[0][-1]))
+    print(os.path.basename(path).split('/')[-1] + "\t\tRMS: " + str(RMS[-1]))
 
-X.append(X[0])
-Y.append(difference)
+#let's calculate the difference between the measured tia noise and the analyzer floor noise
+try:
+    difference = np.sqrt(np.abs((Y[1] **2 - Y[0] **2)))#this is just an indicative value, some data could be negative/undefined
+    
+    X.append(X[0])
+    Y.append(difference)
+    folder_path.append("difference")
+    RMS.append(np.sqrt(RMS[1] **2 - RMS[0] **2))
+    print(folder_path[-1] + "\t\tRMS: " + str(RMS[-1]))
+except:
+    print("WARNING: failed to make difference signal")
 
-print("difference\t\tRMS: " + str(np.sqrt(sa.getRMS(Y[1], x = X[1], minFreq=10000, maxFreq=100000) ** 2 - sa.getRMS(Y[0], x = X[0], minFreq=10000, maxFreq=100000) ** 2)))
-folder_path.append("difference")
-sa.plotNSD(X,Y, paths = folder_path)#, linearX=True, linearY=True)
+sa.plotNSD(X,Y, paths = folder_path)#, showAverageLines = True)#, linearX=True, linearY=True)
+print("RMS calculated between " + str(X[0][0]) + "Hz and " + str(X[0][-1]))
 
 

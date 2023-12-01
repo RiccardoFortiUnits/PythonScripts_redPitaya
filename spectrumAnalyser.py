@@ -18,7 +18,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
     #V: measure of rpm tension emitted by the source (on the sum of its output impedance 
     #and the input one of the spectrum analyzer)
 def dBm_to_V_sqrtHz(y, inputImpedance_Ohm = 50, outputImpedance_Ohm = 50):
-    return np.sqrt(10**(y / 10 - 3) * inputImpedance_Ohm) / 2 * \
+    return np.sqrt(10**(y / 10 - 3) * inputImpedance_Ohm) * \
         (outputImpedance_Ohm + inputImpedance_Ohm) / inputImpedance_Ohm
         
 #V: tension erogated by the source (on the load outputImpedance + inputImpedance)
@@ -29,7 +29,6 @@ def V_sqrtHz_to_dBm(y, inputImpedance_Ohm = 50, outputImpedance_Ohm = 50):
 
 def Volt_to_Ampere(y, Gain_Ohm):
     return y / Gain_Ohm
-
 
 def Volt_to_LightPower(y, Gain_Ohm, responsivity):
     return y / Gain_Ohm / responsivity
@@ -42,31 +41,39 @@ def getSpectrumAnalysis_ltSpice(file_csv, isDataIndB = True):
     array = data.to_numpy()
     return array[:,0], array[:,1]
 
-#still not sure how to properly translate the analyzer readings to the correct levels...
+#still not sure if the translation is correct...
+    #anyway, the noise obtained by the Signal Hound (in dBm or mVrms, depending on the SH configuration) is 
+    #converted in V/√Hz. To convert from mVrms, the file name must contain the string "mv"
+
+    #Be aware of where you want to reference the noise to: there is always a voltage 
+    #divider between the signal source and the analyzer (the input impedance of the SH is 50Ohm), 
+    #and the SH compensates for that by assuming that the source has an output impedance of 50Ohm, 
+    #thus multiplying the values it reads by 2. And so, the noise is referenced to the output of the 
+    #source (i.e. "before" its output impedance)
+    #This function lets you choose a different output source impedance (outputImpedance_Ohm)        
 def getSpectrumAnalysis_signalHound(file_csv, isDataIndB = True, outputImpedance_Ohm = 50):
-    if "mv" in file_csv:
+    if "mv" in os.path.basename(file_csv).split('/')[-1]:
         isDataIndB = False
     
     data = pd.read_csv(file_csv, low_memory=False, header= None)
     array = data.to_numpy()
     binBand = 1/(array[1,0] - array[0,0])
-    pg = 10*np.log10(len(array[:,0]))
+    # pg = 10*np.log10(len(array[:,0]))
     # print(binBand)
-    # print("pg: " + str(pg) + "  | " + str(len(array[:,0])))
-    
+    # print("pg: " + str(pg) + "  | " + str(len(array[:,0])))    
     
     if isDataIndB:
-        #return array[:,0], dBm_to_V_sqrtHz(array[:,1] + pg, outputImpedance_Ohm = outputImpedance_Ohm)
-        return array[:,0], dBm_to_V_sqrtHz(array[:,1], outputImpedance_Ohm = outputImpedance_Ohm) * np.sqrt(binBand)
+        #divide by 2 (remove the voltage divider done by the SH) and multiply by the bin bandwidth, so that the output is normalized in frequency
+        return array[:,0], dBm_to_V_sqrtHz(array[:,1], outputImpedance_Ohm = outputImpedance_Ohm) / 2 * np.sqrt(binBand)
     else:
         print("controlla")
-        return array[:,0], array[:,1] * 0.001 / binBand
+        return array[:,0], array[:,1] * 0.001 * np.sqrt(binBand)
 
-
-def getNSD(noise, fs, durata):
+#NSD from a time-domain data acquisition.
+def getNSD(noise, samplingFrequency):
     noise = noise - np.mean(noise)
         
-    frequencies = np.fft.fftfreq(len(noise), 1.0 / fs)
+    frequencies = np.fft.fftfreq(len(noise), 1.0 / samplingFrequency)
 
     window = np.hanning(len(noise))
     
@@ -95,7 +102,7 @@ def getRMS(y, minFreq = -1, maxFreq = -1, x = None):
     return np.sqrt(np.sum(sq))
         
 
-def plotNSD(frequencies, spectrum, paths = None, logPlot = True, linearX=False, linearY=False):
+def plotNSD(frequencies, spectrum, paths = None, logPlot = True, linearX=False, linearY=False, showAverageLines = False):
     
     #let's work with a list of curves to plot
     if frequencies.__class__ != list:
@@ -103,18 +110,18 @@ def plotNSD(frequencies, spectrum, paths = None, logPlot = True, linearX=False, 
         spectrum = [spectrum]
     
     if paths == None:
-        paths = list(map(str, list(range(len(frequencies)))))
-    # for j in range(len(frequencies)):
-    #     f2 = InterpolatedUnivariateSpline(frequencies[j], spectrum[j]**2, k=1)
-    #     result4 = np.sqrt(f2.integral(frequencies[j][0], frequencies[j][-1]))
-    #     # non serve moltiplicare *2 a causa della partizione tra i 50Ohm, è già fatta internamente
-    #     print("V_rms " + str(j) +": " + str(result4))
-    
+        paths = list(map(str, list(range(len(frequencies)))))    
     
     plt.figure(figsize=(15, 10))
     for j in range(len(frequencies)):
-    # for j in range(len(frequencies)-1,-1,-1):
+    # for j in range(len(frequencies)-1,-1,-1): 
         plt.plot(frequencies[j], spectrum[j], alpha=0.7, label = os.path.basename(paths[j]).split('/')[-1])
+       
+    if showAverageLines:
+        for j in range(len(frequencies)):
+            plt.plot(np.array([frequencies[j][0], frequencies[j][-1]]), np.ones(2)*np.mean(spectrum[j]), 
+                     alpha=1, label = os.path.basename(paths[j]).split('/')[-1] + " avg")
+        
 
     plt.legend(loc="upper right")            
     if not linearX:
