@@ -7,7 +7,7 @@ connection = ShellHandler()
 
 def connect():
     global connection
-    connection = ShellHandler.standardConnection()
+    connection.standardConnection()
     setPidValues["state"] = "active"
     disablePid["state"] = "active"
     canvas.itemconfig(indicatore, fill='green')
@@ -80,10 +80,10 @@ output_text = tk.Text(finestra, height=5, width=30)
 title.grid(row = 0, columnspan=3,padx=5,pady=5)
 
 elements = [\
-    element("Kp", ShellHandler.setProportional, 1, 0.1),\
-    element("Ki", ShellHandler.setIntegral, 2, 0.02),\
-    element("Kd", ShellHandler.setDerivative, 3, 0.01),\
-    element("set point (V)", ShellHandler.setSetPoint, 4, 0.3),\
+    element("Kp", connection.pidSetProportional, 1, 0.1),\
+    element("Ki", connection.pidSetIntegral, 2, 0.02),\
+    element("Kd", connection.pidSetDerivative, 3, 0.01),\
+    element("set point (V)", connection.pidSetSetPoint, 4, 0.3),\
     ]
 
 setPidValues.grid(row = 5 ,column =1,padx=5,pady=5,sticky=tk.W)

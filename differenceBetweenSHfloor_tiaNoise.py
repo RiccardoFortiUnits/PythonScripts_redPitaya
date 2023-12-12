@@ -30,9 +30,9 @@ import lecroyInterface
 
 #-----------------------------MODIFY------------------------
 
-noiseFloorPath      = "C:\\Users\\lastline\\Documents\\SignalHound\\10-11 kHz\\floor.csv"
-tiaNoisePath        = "C:\\Users\\lastline\\Documents\\SignalHound\\10-11 kHz\\tia_diode.csv"
-simulatedNoisePath  = "C:\\Users\\lastline\\Documents\\SignalHound\\10-11 kHz\\tia_noise.txt"
+noiseFloorPath      = "C:\\Users\\lastline\\Documents\\SignalHound\\199950-200k\\floor_0gain.csv"
+tiaNoisePath        = "C:\\Users\\lastline\\Documents\\SignalHound\\199950-200k\\tia_0gain.csv"
+simulatedNoisePath  = "C:\\Users\\lastline\\Documents\\SignalHound\\199950-200k\\tia_noise.txt"
 
 folder_path = [noiseFloorPath, tiaNoisePath, simulatedNoisePath]
 
@@ -42,7 +42,7 @@ tiaGain_Ohm = 5600
 #in which metrics should the output be? V/√Hz (voltage), A/√Hz (current), W/√Hz (NEP)
 outputDimensions                =          "voltage"     #"NEP" # "current" # "voltage"
 
-diodeResponsitivity = 0.3
+diodeResponsitivity = 0.2
 
 #noise to add to the spice simulation (expressed in V/√Hz)
 simulationAddictions_V_sqrtHz = [
@@ -68,7 +68,7 @@ for path in folder_path:
     if extension == '.txt':
         x, y = sa.getSpectrumAnalysis_ltSpice(path)
     if extension == '.csv':
-        x, y = sa.getSpectrumAnalysis_signalHound(path, outputImpedance_Ohm =50)
+        x, y = sa.getSpectrumAnalysis_signalHound(path, outputImpedance_Ohm = 50)
     if extension == '.trc':
         data, samplingFreq, time = lecroyInterface.getDataFromBinaryFile(path)
         x,y = sa.getNSD(data, samplingFreq, time)
@@ -98,7 +98,7 @@ for path in folder_path:
 
 #let's calculate the difference between the measured tia noise and the analyzer floor noise
 try:
-    difference = np.sqrt(np.abs((Y[1] **2 - Y[0] **2)))#this is just an indicative value, some data could be negative/undefined
+    difference = np.sqrt(np.maximum(1e-18,(Y[1] **2 - Y[0] **2)))#this is just an indicative value, some data could be negative/undefined
     
     X.append(X[0])
     Y.append(difference)

@@ -52,7 +52,7 @@ def getAcquisition():
 class ShellHandler:
 
     def __init__(self, host = None, user = None, psw = None, keyType = None, key = None):
-        if host == None:
+        if host is not None:
             self.ssh = paramiko.SSHClient()
             self.ssh.get_host_keys().add(host, keyType, key)
             self.ssh.connect(host, username=user, password=psw)

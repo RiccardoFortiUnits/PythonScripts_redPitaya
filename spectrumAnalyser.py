@@ -15,7 +15,7 @@ import scipy.integrate as integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
 
 #dBm: measure of power read by the spectrum analyzer (on a certain input impedance)
-    #V: measure of rpm tension emitted by the source (on the sum of its output impedance 
+    #V/√Hz: measure of rpm tension emitted by the source (on the sum of its output impedance 
     #and the input one of the spectrum analyzer)
 def dBm_to_V_sqrtHz(y, inputImpedance_Ohm = 50, outputImpedance_Ohm = 50):
     return np.sqrt(10**(y / 10 - 3) * inputImpedance_Ohm) * \
@@ -33,7 +33,7 @@ def Volt_to_Ampere(y, Gain_Ohm):
 def Volt_to_LightPower(y, Gain_Ohm, responsivity):
     return y / Gain_Ohm / responsivity
 
-#the data in the file is already in V/sqrt(Hz), and it doesn't need any adjustment (why 
+#the data in the file is already in V/√Hz, and it doesn't need any adjustment (why 
     #can't every other tool do the same? It doesn't seem like a hard thing to ask, that 
     #what you measure is correct...)
 def getSpectrumAnalysis_ltSpice(file_csv, isDataIndB = True):
@@ -63,11 +63,17 @@ def getSpectrumAnalysis_signalHound(file_csv, isDataIndB = True, outputImpedance
     # print("pg: " + str(pg) + "  | " + str(len(array[:,0])))    
     
     if isDataIndB:
-        #divide by 2 (remove the voltage divider done by the SH) and multiply by the bin bandwidth, so that the output is normalized in frequency
-        return array[:,0], dBm_to_V_sqrtHz(array[:,1], outputImpedance_Ohm = outputImpedance_Ohm) / 2 * np.sqrt(binBand)
+        #multiply by the bin bandwidth, so that the output is normalized in frequency
+        return array[:,0], dBm_to_V_sqrtHz(array[:,1], outputImpedance_Ohm = outputImpedance_Ohm) * np.sqrt(binBand)
     else:
-        print("controlla")
-        return array[:,0], array[:,1] * 0.001 * np.sqrt(binBand)
+        return array[:,0], array[:,1]
+
+      
+def getSpectrumAnalysis_matlabNoise(file_csv):
+    data = pd.read_csv(file_csv, low_memory=False, header= None)
+    array = data.to_numpy()
+    freq, psd = getNSD(array[:,1], 1/(array[1,0] - array[0,0]))
+    return freq, psd
 
 #NSD from a time-domain data acquisition.
 def getNSD(noise, samplingFrequency):
@@ -102,14 +108,16 @@ def getRMS(y, minFreq = -1, maxFreq = -1, x = None):
     return np.sqrt(np.sum(sq))
         
 
-def plotNSD(frequencies, spectrum, paths = None, logPlot = True, linearX=False, linearY=False, showAverageLines = False):
+def plotNSD(frequencies, spectrum, paths = None, axisDimensions = "V/√Hz", logPlot = True, linearX=False, linearY=False, showAverageLines = False):
     
     #let's work with a list of curves to plot
     if frequencies.__class__ != list:
         frequencies = [frequencies]
         spectrum = [spectrum]
+        if paths is not None:
+            paths = [paths]
     
-    if paths == None:
+    if paths is None:
         paths = list(map(str, list(range(len(frequencies)))))    
     
     plt.figure(figsize=(15, 10))
@@ -128,7 +136,7 @@ def plotNSD(frequencies, spectrum, paths = None, logPlot = True, linearX=False, 
         plt.xscale('log')
     if not linearY:
         plt.yscale('log')
-    plt.ylabel("V/sqrt(Hz)")
+    plt.ylabel(axisDimensions)
     plt.xlabel("Hz")
     
     # plt.show()
