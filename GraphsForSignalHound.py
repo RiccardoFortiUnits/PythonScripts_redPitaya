@@ -12,16 +12,16 @@ import os
 import tkinter
 from tkinter import filedialog
 
-tkinter.Tk().withdraw() # prevents an empty tkinter window from appearing
 X = list()
 Y = list()
+tkinter.Tk().withdraw() # prevents an empty tkinter window from appearing
 folder_path = filedialog.askopenfilenames(filetypes=[("csv files", "*.*")])
 if len(folder_path) < 1:
     print("procedure stopped")
 else:    
     for path in folder_path:
         extension = os.path.splitext(path)[-1]
-        outputImpedance = 50#®100 if ("floor" in os.path.basename(path)) else 50
+        outputImpedance = 50#100 if ("floor" in os.path.basename(path)) else 50
         if extension == '.txt':
             x, y = getSpectrumAnalysis_ltSpice(path)
         if extension == '.csv':
@@ -34,4 +34,4 @@ else:
         X.append(x)
         Y.append(y)
         
-    sa.plotNSD(X,Y, paths = folder_path, linearX=True)#, linearY=True)
+    sa.plotNSD(X,Y, paths = folder_path)#, linearX=True)#, linearY=True)

@@ -16,18 +16,18 @@ def sendToPID():
     # Pulisce il contenuto corrente della casella di testo
     output_text.delete("1.0", tk.END)
 
-    connection.reset(connection)
+    connection.pidDisableIntegral()
     for el in elements:
         el.callFunction(connection)
-    connection.enableIntegral(connection)
+    connection.pidEnableIntegral()
        
     
 def stop_pid():
     output_text.delete("1.0", tk.END)
-    # connection.reset(connection)
-    connection.setProportional(connection, 0)
-    connection.setIntegral(connection, 0)
-    connection.setDerivative(connection, 0)
+    connection.pidDisableIntegral()
+    connection.pidSetProportional(0)
+    connection.pidSetIntegral(0)
+    connection.pidSetDerivative(0)
     # connection.setSetPoint(connection, 0)
 
 class element:
@@ -54,7 +54,7 @@ class element:
     def callFunction(self, connection):
         val = float(self.entry.get())
         output_text.insert(tk.END, f"{self.name}: {val}\n")
-        self.settingFunction(connection, val)
+        self.settingFunction(val)
 
 # Creazione della finestra principale
 finestra = tk.Tk()
@@ -81,9 +81,9 @@ title.grid(row = 0, columnspan=3,padx=5,pady=5)
 
 elements = [\
     element("Kp", connection.pidSetProportional, 1, 0.1),\
-    element("Ki", connection.pidSetIntegral, 2, 0.02),\
-    element("Kd", connection.pidSetDerivative, 3, 0.01),\
-    element("set point (V)", connection.pidSetSetPoint, 4, 0.3),\
+    element("Ki", connection.pidSetIntegral, 2, 0.00),\
+    element("Kd", connection.pidSetDerivative, 3, 0.00),\
+    element("set point (V)", connection.pidSetSetPoint, 4, 0.0),\
     ]
 
 setPidValues.grid(row = 5 ,column =1,padx=5,pady=5,sticky=tk.W)
