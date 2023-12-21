@@ -51,7 +51,7 @@ def getSpectrumAnalysis_ltSpice(file_csv, isDataIndB = True):
     #thus multiplying the values it reads by 2. And so, the noise is referenced to the output of the 
     #source (i.e. "before" its output impedance)
     #This function lets you choose a different output source impedance (outputImpedance_Ohm)        
-def getSpectrumAnalysis_signalHound(file_csv, isDataIndB = True, outputImpedance_Ohm = 50):
+def getSpectrumAnalysis_signalHound(file_csv, isDataIndB = True, outputImpedance_Ohm = 50, inputInpedance = 50):
     if "mv" in os.path.basename(file_csv).split('/')[-1]:
         isDataIndB = False
     
@@ -64,7 +64,9 @@ def getSpectrumAnalysis_signalHound(file_csv, isDataIndB = True, outputImpedance
     
     if isDataIndB:
         #multiply by the bin bandwidth, so that the output is normalized in frequency
-        return array[:,0], dBm_to_V_sqrtHz(array[:,1], outputImpedance_Ohm = outputImpedance_Ohm) * np.sqrt(binBand)
+        return array[:,0], \
+            dBm_to_V_sqrtHz(array[:,1], outputImpedance_Ohm = outputImpedance_Ohm, inputImpedance_Ohm = inputInpedance)\
+                                            * np.sqrt(binBand)
     else:
         return array[:,0], array[:,1]
 
@@ -72,8 +74,9 @@ def getSpectrumAnalysis_signalHound(file_csv, isDataIndB = True, outputImpedance
 def getSpectrumAnalysis_matlabNoise(file_csv):
     data = pd.read_csv(file_csv, low_memory=False, header= None)
     array = data.to_numpy()
-    freq, psd = getNSD(array[:,1], 1/(array[1,0] - array[0,0]))
-    return freq, psd
+    # freq, psd = getNSD(array[:,1], 1/(array[1,0] - array[0,0]))
+    # return freq, psd
+    return array[:,0], array[:,1]
 
 #NSD from a time-domain data acquisition.
 def getNSD(noise, samplingFrequency):
@@ -163,9 +166,38 @@ def combineTraces(x1, y1, x2, y2):
     
     return X, Y
     
-# x1 = [0,1]
-# y1 =  [3,4]
-# x2 = [-1,4,5]
-# y2 =  [0,2,2]
-# x,y = combineTraces(x1, y1, x2, y2)
-# plotNSD([x1,x2,x], [y1,y2,y], linearX=True, linearY=True)
+
+def getSpikes(y, windowSize):
+    allSpikeIndexes = [i for i in range(1, len(y) - 1, 1) if y[i] >= np.max(y[i - 1 : i + 1])]
+    allSpikes = y[allSpikeIndexes]
+    return allSpikeIndexes
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

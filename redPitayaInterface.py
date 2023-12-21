@@ -76,6 +76,12 @@ class ShellHandler:
         cmd = cmd.strip('\n')
         self.stdin.write(cmd + '\n')
 
+    def copyFile(self, localpath, remotepath):
+        sftp = self.ssh.open_sftp()
+        sftp.put(localpath, remotepath)
+        sftp.close()
+        
+        
     #functions to set the values of the RAM, which will be read by the FPGA
     
     #generic function
