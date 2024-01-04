@@ -21,6 +21,7 @@ if len(folder_path) < 1:
 else:    
     for path in folder_path:
         extension = os.path.splitext(path)[-1]
+        name = os.path.basename(path)
         outputImpedance = 50#100 if ("floor" in os.path.basename(path)) else 50
         if extension == '.txt':
             x, y = getSpectrumAnalysis_ltSpice(path)
