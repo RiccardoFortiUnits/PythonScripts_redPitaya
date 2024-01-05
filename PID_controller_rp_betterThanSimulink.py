@@ -16,6 +16,12 @@ def connect():
     updateFpga["state"] = "active"
     canvas.itemconfig(indicatore, fill='green')
 
+def disconnect():
+    # Code to execute when the window is closed
+    if connection is not None:
+        connection.close()
+    finestra.destroy()
+    
 def sendToPID():
     # Pulisce il contenuto corrente della casella di testo
     output_text.delete("1.0", tk.END)
@@ -117,7 +123,24 @@ class toggle:
         else:
             self.settingFunction(self.currentVal)
         self.updateButtonText()
-            
+       
+class enumToggle:
+    def __init__(self, name, states, settingFunction, gridRow, gridColumnOffset = 0):
+        self.settingFunction = settingFunction
+        self.name = name
+        self.states = states
+        self.currentVal = 0
+        self.toggleButton = tk.Button(finestra, text=name)
+        self.toggleButton.grid(row = gridRow, column = gridColumnOffset, padx = 5, pady = 5)
+        self.toggleButton.bind("<ButtonRelease-1>", self.callFunction)
+        self.tag = tk.Label(finestra, text=states[0])
+        self.tag.grid(row = gridRow, column = gridColumnOffset + 1, padx = 5, pady = 5)     
+    
+    def callFunction(self, connection):
+        self.currentVal = (self.currentVal + 1) % len(self.states)
+        self.tag.config(text=self.states[self.currentVal])
+        self.settingFunction(self.currentVal)
+        
 
 # Creazione della finestra principale
 finestra = tk.Tk()
@@ -153,9 +176,11 @@ elements = [\
     element("set point (V)", connection.pidSetSetPoint, 4, 0.0),\
     ]
 toggles = [\
-    toggle("feedback", connection.pidSetFeedback, 1,8,False,False),\
     toggle("delay", connection.pidSetDelay, 2,8,True,False, 300),\
     toggle("filtro", connection.pidSetFilter, 3,8,True,False, 0.9),\
+    ]
+enumToggles = [\
+    enumToggle("feedback", ["no feedback", "negative feedback", "positive feedback", "negative feedback, negated output"], connection.pidSetFeedback, 1,8),\
     ]
 setPidValues.grid(row = 5 ,column =1,padx=5,pady=5)
 canvas.grid(row = 5, column =0 ,padx=0,pady=0)
@@ -168,7 +193,8 @@ setPidValues["state"] = "disable"
 disablePid["state"] = "disable"
 updateFpga["state"] = "disable"
 
-
+    
+finestra.protocol("WM_DELETE_WINDOW", disconnect)
 # Avvio del loop principale
 x = threading.Thread(target=connect)
 x.start()

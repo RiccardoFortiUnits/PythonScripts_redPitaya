@@ -64,6 +64,9 @@ class ShellHandler:
 
     def __del__(self):
         self.ssh.close()
+        
+    def close(self):
+        self.ssh.close()
 
     #specific connection for my PC and redPitaya
     def standardConnection(self):
@@ -108,14 +111,14 @@ class ShellHandler:
         self.pidSetValue(0x40300000, 1, 0xe)
     configValValue = 0
     def pidSetFilter(self, enable, coefficient = 0):
-        ShellHandler.configValValue = ShellHandler.configValValue & ~(1 << 12) | (enable << 12)
+        ShellHandler.configValValue = ShellHandler.configValValue & ~(1 << 13) | (enable << 13)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
-        self.pidSetValue(0x40300008, 2**14, coefficient)
+        self.pidSetValue(0x40300008, 2**(30-14), coefficient)
     def pidSetDelay(self, enable, delay = 0):
-        ShellHandler.configValValue = ShellHandler.configValValue & ~((1 << 1) | (0x3FF << 2)) | (enable << 1) | (int(delay) << 2)
+        ShellHandler.configValValue = ShellHandler.configValValue & ~((1 << 2) | (0x3FF << 3)) | (enable << 2) | (int(delay) << 3)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
     def pidSetFeedback(self, enable):
-        ShellHandler.configValValue = ShellHandler.configValValue & ~(1 << 0) | (enable << 0)
+        ShellHandler.configValValue = ShellHandler.configValValue & ~(0x3 << 0) | (enable << 0)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
         
         
