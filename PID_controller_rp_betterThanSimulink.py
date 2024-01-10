@@ -41,23 +41,26 @@ def stop_pid():
     # connection.setSetPoint(connection, 0)
 
 def loadNewFpga():
-    newFpgaName = newFpgaName_text.get() + datetime.now().strftime(" %d_%m_%Y %H_%M")+".bit.bin"
     
-    # newFpgaName = newFpgaName.replace(" ", "\\ ")
+    newFpgaName = newFpgaName_text.get()
+        
+    # newFpgaName = newFpgaName + datetime.now().strftime(" %d_%m_%Y %H_%M")+".bit.bin"
     
-    backupSaveFolder = "C:/Users/lastline/Documents/backupFpgaBinaries/"
+    # # newFpgaName = newFpgaName.replace(" ", "\\ ")
+    
+    # backupSaveFolder = "C:/Users/lastline/Documents/backupFpgaBinaries/"
 
-    #execute the batch that converts the bitstream to one usable by the redPitaya
-    batFilePath="C:/Xilinx/Vivado/2020.1/bin/create_RP_binFile.bat"
-    p = subprocess.Popen(batFilePath, shell=True, stdout = subprocess.PIPE)
-    stdout, stderr = p.communicate()
+    # #execute the batch that converts the bitstream to one usable by the redPitaya
+    # batFilePath="C:/Xilinx/Vivado/2020.1/bin/create_RP_binFile.bat"
+    # p = subprocess.Popen(batFilePath, shell=True, stdout = subprocess.PIPE)
+    # stdout, stderr = p.communicate()
 
-    #save a backup of the newly created binary
-    shutil.copyfile("C:/Git/redPitayaFpga/prj/v0.94/project/redpitaya.runs/impl_1/red_pitaya_top.bit.bin", 
-                   backupSaveFolder + newFpgaName)
+    # #save a backup of the newly created binary
+    # shutil.copyfile("C:/Git/redPitayaFpga/prj/v0.94/project/redpitaya.runs/impl_1/red_pitaya_top.bit.bin", 
+    #                backupSaveFolder + newFpgaName)
 
-    #open an ssh connection, send the selected binary and execute it
-    connection.copyFile(backupSaveFolder + newFpgaName, newFpgaName)
+    # #open an ssh connection, send the selected binary and execute it
+    # connection.copyFile(backupSaveFolder + newFpgaName, newFpgaName)
     connection.execute("/opt/redpitaya/bin/fpgautil -b '"+newFpgaName.replace(" ","\ ")+"'")
 
 class element:
@@ -160,7 +163,7 @@ disablePid = tk.Button(finestra, text="Disabilita PID", command=stop_pid)
 #creazione dei gestori dell'update FPGA
 updateFpga = tk.Button(finestra, text="Aggiorna FPGA", command=loadNewFpga)
 newFpgaName_text = tk.Entry(finestra)
-newFpgaName_text.insert(0, "redPitaya_top")
+newFpgaName_text.insert(0, "filterInMemory 04_01_2024 14_33.bit.bin")
 
 # Creazione della casella di testo per l'output
 output_text = tk.Text(finestra, height=5, width=30)
