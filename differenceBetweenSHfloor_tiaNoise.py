@@ -30,11 +30,11 @@ import lecroyInterface
 
 #-----------------------------MODIFY------------------------
 
-noiseFloorPath      = "C:\\Users\\lastline\\Documents\\SignalHound\\199950-200k\\floor_0gain.csv"
-tiaNoisePath        = "C:\\Users\\lastline\\Documents\\SignalHound\\199950-200k\\tia_0gain.csv"
+noiseFloorPath      = "C:/Users/lastline/Documents/SignalHound/new tia circuit/new_tia_no 2nd gain - diode_light.csv"
+tiaNoisePath        = "C:/Users/lastline/Documents/SignalHound/new tia circuit/old_tia - diode_light.csv"
 simulatedNoisePath  = "C:\\Users\\lastline\\Documents\\SignalHound\\199950-200k\\tia_noise.txt"
 
-folder_path = [noiseFloorPath, tiaNoisePath, simulatedNoisePath]
+folder_path = [noiseFloorPath, tiaNoisePath]#, simulatedNoisePath]
 
 #feedback resistor    
 tiaGain_Ohm = 5600

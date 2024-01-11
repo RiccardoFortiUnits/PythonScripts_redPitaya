@@ -40,27 +40,34 @@ def stop_pid():
     connection.pidSetDerivative(0)
     # connection.setSetPoint(connection, 0)
 
+compile_n_sendFpga = True
+def change_compile_n_sendFpga(*args):
+    print(connection.executeWithResponse("monitor 1076887552"))
+    global compile_n_sendFpga
+    compile_n_sendFpga = not compile_n_sendFpga
+    
 def loadNewFpga():
+    global compile_n_sendFpga
     
     newFpgaName = newFpgaName_text.get()
+    
+    if change_compile_n_sendFpga:
+        newFpgaName = newFpgaName + datetime.now().strftime(" %d_%m_%Y %H_%M")+".bit.bin"
         
-    # newFpgaName = newFpgaName + datetime.now().strftime(" %d_%m_%Y %H_%M")+".bit.bin"
+        backupSaveFolder = "C:/Users/lastline/Documents/backupFpgaBinaries/"
     
-    # # newFpgaName = newFpgaName.replace(" ", "\\ ")
+        #execute the batch that converts the bitstream to one usable by the redPitaya
+        batFilePath="C:/Xilinx/Vivado/2020.1/bin/create_RP_binFile.bat"
+        p = subprocess.Popen(batFilePath, shell=True, stdout = subprocess.PIPE)
+        stdout, stderr = p.communicate()
     
-    # backupSaveFolder = "C:/Users/lastline/Documents/backupFpgaBinaries/"
-
-    # #execute the batch that converts the bitstream to one usable by the redPitaya
-    # batFilePath="C:/Xilinx/Vivado/2020.1/bin/create_RP_binFile.bat"
-    # p = subprocess.Popen(batFilePath, shell=True, stdout = subprocess.PIPE)
-    # stdout, stderr = p.communicate()
-
-    # #save a backup of the newly created binary
-    # shutil.copyfile("C:/Git/redPitayaFpga/prj/v0.94/project/redpitaya.runs/impl_1/red_pitaya_top.bit.bin", 
-    #                backupSaveFolder + newFpgaName)
-
-    # #open an ssh connection, send the selected binary and execute it
-    # connection.copyFile(backupSaveFolder + newFpgaName, newFpgaName)
+        #save a backup of the newly created binary
+        shutil.copyfile("C:/Git/redPitayaFpga/prj/v0.94/project/redpitaya.runs/impl_1/red_pitaya_top.bit.bin", 
+                        backupSaveFolder + newFpgaName)
+    
+        #open an ssh connection, send the selected binary and execute it
+        connection.copyFile(backupSaveFolder + newFpgaName, newFpgaName)
+        
     connection.execute("/opt/redpitaya/bin/fpgautil -b '"+newFpgaName.replace(" ","\ ")+"'")
 
 class element:
@@ -184,6 +191,7 @@ toggles = [\
     ]
 enumToggles = [\
     enumToggle("feedback", ["no feedback", "negative feedback", "positive feedback", "negative feedback, negated output"], connection.pidSetFeedback, 1,8),\
+    enumToggle("carica/invia FPGA", ["compila e invia", "carica FPGA"], change_compile_n_sendFpga, 7,8),\
     ]
 setPidValues.grid(row = 5 ,column =1,padx=5,pady=5)
 canvas.grid(row = 5, column =0 ,padx=0,pady=0)

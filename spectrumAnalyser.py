@@ -10,6 +10,7 @@ plt.rcParams['agg.path.chunksize'] = 10000
 import numpy as np
 import os
 import pandas as pd
+import csv
 
 import scipy.integrate as integrate
 from scipy.interpolate import InterpolatedUnivariateSpline
@@ -56,6 +57,10 @@ def getSpectrumAnalysis_signalHound(file_csv, isDataIndB = True, outputImpedance
         isDataIndB = False
     
     data = pd.read_csv(file_csv, low_memory=False, header= None)
+    try:
+        number = int(data[0][0])
+    except:
+        data = pd.read_csv(file_csv, low_memory=False, header= 1)
     array = data.to_numpy()
     binBand = 1/(array[1,0] - array[0,0])
     # pg = 10*np.log10(len(array[:,0]))
@@ -166,6 +171,12 @@ def combineTraces(x1, y1, x2, y2):
     
     return X, Y
     
+def saveTrace(x, y, fileName):
+    with open(fileName, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerows(map(list, zip(*[x, y])))
+        csvfile.close()
+
 
 def getSpikes(y, windowSize):
     allSpikeIndexes = [i for i in range(1, len(y) - 1, 1) if y[i] >= np.max(y[i - 1 : i + 1])]

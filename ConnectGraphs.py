@@ -30,7 +30,4 @@ for path in folder_path:
     
 finalName = filedialog.asksaveasfilename(filetypes=[("csv files", "*.csv")])
         
-with open(finalName + "_mv.csv", 'w', newline='') as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerows(map(list, zip(*[x0, y0])))
-    csvfile.close()
+sa.saveTrace(x0, y0, finalName + "_mv.csv")
