@@ -42,7 +42,6 @@ def stop_pid():
 
 compile_n_sendFpga = True
 def change_compile_n_sendFpga(*args):
-    print(connection.executeWithResponse("monitor 1076887552"))
     global compile_n_sendFpga
     compile_n_sendFpga = not compile_n_sendFpga
     
@@ -51,7 +50,7 @@ def loadNewFpga():
     
     newFpgaName = newFpgaName_text.get()
     
-    if change_compile_n_sendFpga:
+    if compile_n_sendFpga:
         newFpgaName = newFpgaName + datetime.now().strftime(" %d_%m_%Y %H_%M")+".bit.bin"
         
         backupSaveFolder = "C:/Users/lastline/Documents/backupFpgaBinaries/"
@@ -170,7 +169,7 @@ disablePid = tk.Button(finestra, text="Disabilita PID", command=stop_pid)
 #creazione dei gestori dell'update FPGA
 updateFpga = tk.Button(finestra, text="Aggiorna FPGA", command=loadNewFpga)
 newFpgaName_text = tk.Entry(finestra)
-newFpgaName_text.insert(0, "filterInMemory 04_01_2024 14_33.bit.bin")
+newFpgaName_text.insert(0, "newPID 18_01_2024 09_45.bit.bin")
 
 # Creazione della casella di testo per l'output
 output_text = tk.Text(finestra, height=5, width=30)
@@ -188,9 +187,10 @@ elements = [\
 toggles = [\
     toggle("delay", connection.pidSetDelay, 2,8,True,False, 300),\
     toggle("filtro", connection.pidSetFilter, 3,8,True,False, 0.9),\
+    toggle("level shifter", connection.pidSetVoltageShifter, 4,8,False),\
     ]
 enumToggles = [\
-    enumToggle("feedback", ["no feedback", "negative feedback", "positive feedback", "negative feedback, negated output"], connection.pidSetFeedback, 1,8),\
+    enumToggle("feedback", ["no feedback", "negative feedback", "positive feedback", "no feedback, negated output"], connection.pidSetFeedback, 1,8),\
     enumToggle("carica/invia FPGA", ["compila e invia", "carica FPGA"], change_compile_n_sendFpga, 7,8),\
     ]
 setPidValues.grid(row = 5 ,column =1,padx=5,pady=5)

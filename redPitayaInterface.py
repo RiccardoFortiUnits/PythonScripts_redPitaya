@@ -93,7 +93,7 @@ class ShellHandler:
         self.execute("monitor "+ str(address) + " " + str(value_toFpgaNumber))
          
     def pidSetSetPoint(self, value):
-        self.pidSetValue(0x40300010, (2**13) - 1, value) 
+        self.pidSetValue(0x40300010, (2**23) - 1, value) 
         
     def pidSetProportional(self, value):
         self.pidSetValue(0x40300014, 2**12, value)   
@@ -113,12 +113,15 @@ class ShellHandler:
     def pidSetFilter(self, enable, coefficient = 0):
         ShellHandler.configValValue = ShellHandler.configValValue & ~(1 << 13) | (enable << 13)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
-        self.pidSetValue(0x40300008, 2**(30-14), coefficient)
+        self.pidSetValue(0x40300008, 2**(30), coefficient)
     def pidSetDelay(self, enable, delay = 0):
         ShellHandler.configValValue = ShellHandler.configValValue & ~((1 << 2) | (0x3FF << 3)) | (enable << 2) | (int(delay) << 3)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
     def pidSetFeedback(self, enable):
         ShellHandler.configValValue = ShellHandler.configValValue & ~(0x3 << 0) | (enable << 0)
+        self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
+    def pidSetVoltageShifter(self, enable):
+        ShellHandler.configValValue = ShellHandler.configValValue & ~(0x1 << 14) | (enable << 14)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
         
         

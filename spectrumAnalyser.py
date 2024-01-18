@@ -148,6 +148,8 @@ def plotNSD(frequencies, spectrum, paths = None, axisDimensions = "V/√Hz", log
     plt.xlabel("Hz")
     
     # plt.show()
+def plotSignal(x, y, paths = None):
+    plotNSD(x, y, paths=paths, axisDimensions = "V", linearX=True, linearY=True)
     
 #for sweeps in different frequency ranges and different binWidth
 def combineTraces(x1, y1, x2, y2):
