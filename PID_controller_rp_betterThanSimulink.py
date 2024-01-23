@@ -40,7 +40,7 @@ def stop_pid():
     connection.pidSetDerivative(0)
     # connection.setSetPoint(connection, 0)
 
-compile_n_sendFpga = True
+compile_n_sendFpga = False
 def change_compile_n_sendFpga(*args):
     global compile_n_sendFpga
     compile_n_sendFpga = not compile_n_sendFpga
@@ -77,6 +77,7 @@ class element:
         self.entry = tk.Entry(finestra)
         
         self.entry.insert(0, str(initialValue))
+        self.entry.bind("<Return>", self.callFunction)
         # self.scale.bind("<ButtonRelease-1>", self.updateEntryFromScale)
         self.tag.grid(row = gridRow, column = gridColumnOffset, padx = 5, pady = 5)
         self.entry.grid(row = gridRow, column = gridColumnOffset + 1, padx = 5, pady = 5)
@@ -109,11 +110,12 @@ class toggle:
         self.currentVal = initialValue
         self.toggleButton = tk.Button(finestra)
         self.toggleButton.grid(row = gridRow, column = gridColumnOffset, padx = 5, pady = 5)
-        self.toggleButton.bind("<ButtonRelease-1>", self.callFunction)
+        self.toggleButton.bind("<ButtonRelease-1>", self.toggle_n_callFunction)
         if useAdditionalVal:
             self.entry = tk.Entry(finestra)
             self.entry.insert(0, additionalInitialValue)
-            self.entry.grid(row = gridRow, column = gridColumnOffset + 1, padx = 5, pady = 5)            
+            self.entry.grid(row = gridRow, column = gridColumnOffset + 1, padx = 5, pady = 5)
+            self.entry.bind("<Return>", self.callFunction)
         else:
             self.entry = None
         self.updateButtonText()
@@ -124,14 +126,20 @@ class toggle:
         else:
             self.toggleButton.config(text="Abilita " + self.name)
     
-    def callFunction(self, connection):
+    def toggle_n_callFunction(self, connection):
         self.currentVal = not self.currentVal
+        self.callFunction(connection) 
+        self.updateButtonText()
+        
+    def callFunction(self, connection):
         if self.useAdditionalVal:
-            val = float(self.entry.get())
-            self.settingFunction(self.currentVal, val)
+            try:
+                val = float(self.entry.get())
+                self.settingFunction(self.currentVal, val)
+            except:
+                self.settingFunction(self.currentVal, self.entry.get())
         else:
             self.settingFunction(self.currentVal)
-        self.updateButtonText()
        
 class enumToggle:
     def __init__(self, name, states, settingFunction, gridRow, gridColumnOffset = 0):
@@ -169,7 +177,7 @@ disablePid = tk.Button(finestra, text="Disabilita PID", command=stop_pid)
 #creazione dei gestori dell'update FPGA
 updateFpga = tk.Button(finestra, text="Aggiorna FPGA", command=loadNewFpga)
 newFpgaName_text = tk.Entry(finestra)
-newFpgaName_text.insert(0, "newPID 18_01_2024 09_45.bit.bin")
+newFpgaName_text.insert(0, "doubleFilter 23_01_2024 14_57.bit.bin")
 
 # Creazione della casella di testo per l'output
 output_text = tk.Text(finestra, height=5, width=30)
@@ -186,8 +194,9 @@ elements = [\
     ]
 toggles = [\
     toggle("delay", connection.pidSetDelay, 2,8,True,False, 300),\
-    toggle("filtro", connection.pidSetFilter, 3,8,True,False, 0.9),\
-    toggle("level shifter", connection.pidSetVoltageShifter, 4,8,False),\
+    toggle("filtro lowPass", connection.pidSetLpFilter, 3,8,True,False, 0.9),\
+    toggle("filtro generico", connection.pidSetGenFilter, 4,8,True,False, "[0.01,0][0.99]"),\
+    toggle("level shifter", connection.pidSetVoltageShifter, 5,8,False),\
     ]
 enumToggles = [\
     enumToggle("feedback", ["no feedback", "negative feedback", "positive feedback", "no feedback, negated output"], connection.pidSetFeedback, 1,8),\

@@ -110,7 +110,7 @@ class ShellHandler:
     def pidEnableIntegral(self):
         self.pidSetValue(0x40300000, 1, 0xe)
     configValValue = 0
-    def pidSetFilter(self, enable, coefficient = 0):
+    def pidSetLpFilter(self, enable, coefficient = 0):
         ShellHandler.configValValue = ShellHandler.configValValue & ~(1 << 13) | (enable << 13)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
         self.pidSetValue(0x40300008, 2**(30), coefficient)
@@ -121,11 +121,42 @@ class ShellHandler:
         ShellHandler.configValValue = ShellHandler.configValValue & ~(0x3 << 0) | (enable << 0)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
     def pidSetVoltageShifter(self, enable):
-        ShellHandler.configValValue = ShellHandler.configValValue & ~(0x1 << 14) | (enable << 14)
+        ShellHandler.configValValue = ShellHandler.configValValue & ~(0x1 << 15) | (enable << 15)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
         
+    def pidSetGenFilter(self, enable, coefficientString):
+        maxCoefficients = 8
+        numbers, denNumSplit = extract_numbers_and_count(coefficientString)
+        if len(numbers) > maxCoefficients:
+            raise Exception("too many coefficients!")
         
+        numbers.extend([0] * (maxCoefficients - len(numbers)))
         
+        ShellHandler.configValValue = ShellHandler.configValValue & ~(1 << 14) | (enable << 14)
+        self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
         
+        self.pidSetValue(0x40300060, 1, denNumSplit)
+        for i in range(len(numbers)):
+            self.pidSetValue(0x40300064 + i*4, 2**20, numbers[i])
+            
         
-        
+import re
+
+def extract_numbers_and_count(input_string):
+    # Use regular expression to find sets of numbers in brackets
+    matches = re.findall(r'\[([0-9eE., -]+)\]', input_string)
+
+    if len(matches) < 2:
+        return None  # Less than two sets found
+
+    # Extract numbers from the first set of brackets
+    first_set_numbers = [float(num) for num in re.split(r'[,\s]+', matches[0]) if num.strip()]
+
+    # Extract numbers from the second set of brackets
+    second_set_numbers = [float(num) for num in re.split(r'[,\s]+', matches[1]) if num.strip()]
+
+    return first_set_numbers + second_set_numbers, len(first_set_numbers) 
+ 
+ 
+ 
+ 
