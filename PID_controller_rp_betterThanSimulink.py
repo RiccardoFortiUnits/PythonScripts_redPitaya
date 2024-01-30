@@ -200,7 +200,9 @@ toggles = [\
     ]
 enumToggles = [\
     enumToggle("feedback", ["no feedback", "negative feedback", "positive feedback", "no feedback, negated output"], connection.pidSetFeedback, 1,8),\
-    enumToggle("carica/invia FPGA", ["compila e invia", "carica FPGA"], change_compile_n_sendFpga, 7,8),\
+    enumToggle(    "carica/invia FPGA", \
+                   ["compila e invia", "carica FPGA"] if compile_n_sendFpga else ["carica FPGA", "compila e invia"], \
+                   change_compile_n_sendFpga, 7,8),\
     ]
 setPidValues.grid(row = 5 ,column =1,padx=5,pady=5)
 canvas.grid(row = 5, column =0 ,padx=0,pady=0)
