@@ -13,13 +13,17 @@ import os
 import numpy as np
 import csv
 
-nOfAcquisitions = 49
-startName = "C:/Users/lastline/Downloads/spectrumSignal (1).csv"
-finalName = "C:/Users/lastline/Downloads/spectrumSignal"
+startingAcquisition = 52
+lastAcquisitions = 61
+startName = "C:/Users/lastline/Downloads/spectrumSignal ("+str(startingAcquisition)+").csv"
+finalName = "C:/Users/lastline/Downloads/10k-200k"
+
+nOfAcquisitions = (lastAcquisitions - startingAcquisition + 1)
 x = [None] * nOfAcquisitions
 y = [None] * nOfAcquisitions
 for i in range(nOfAcquisitions):
-    x[i], y[i] = getSpectrumAnalysis_signalHound(startName.replace("(1)", "("+str(nOfAcquisitions+1)+")"), outputImpedance_Ohm = 50)
+    x[i], y[i] = getSpectrumAnalysis_signalHound(
+        startName.replace("("+str(startingAcquisition)+")", "("+str(startingAcquisition+i)+")"), outputImpedance_Ohm = 50)
 
 meany = 0
 
