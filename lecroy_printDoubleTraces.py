@@ -8,11 +8,20 @@ import numpy as np
 import lecroyInterface
 import matplotlib.pyplot as plt
 from scipy.signal import decimate
+import tkinter
+from tkinter import filedialog
 
-fileName = "C:/Users/lastline/Documents/PID_first_test/C2--S4_HVSCAN_30pC_300V--00000.trc"
+root = tkinter.Tk()
+root.withdraw() # prevents an empty tkinter window from appearing
+folder_path = filedialog.askopenfilenames(filetypes=[("csv files", "*.*")])
+
+fileName = folder_path[0]
 
 (data, samplingFreq, time) = lecroyInterface.getDataFromBinaryFile(fileName)
-(data1, samplingFreq1, time1) = lecroyInterface.getDataFromBinaryFile(fileName.replace("C2", "C3"))
+if "C3" in fileName:
+    (data1, samplingFreq1, time1) = lecroyInterface.getDataFromBinaryFile(fileName.replace("C3", "C2"))    
+else:
+    (data1, samplingFreq1, time1) = lecroyInterface.getDataFromBinaryFile(fileName.replace("C2", "C3"))
 
 samplesToPlot = len(data)
 

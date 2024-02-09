@@ -184,6 +184,9 @@ class ShellHandler:
     def pidSetVoltageShifter(self, enable):
         ShellHandler.configValValue = ShellHandler.configValValue & ~(0x1 << 15) | (enable << 15)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
+    def pidSetSafeSwitch(self, value):
+        ShellHandler.configValValue = ShellHandler.configValValue & ~(0x3 << 16) | (value << 16)
+        self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
         
     def pidSetGenFilter(self, enable, coefficientString):
         maxCoefficients = 8

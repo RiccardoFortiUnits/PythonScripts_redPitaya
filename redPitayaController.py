@@ -7,6 +7,8 @@ from datetime import datetime
 import shutil
 import time
 
+
+
 connection = ShellHandler()
 connected = False
 elementListFile = "redPitayaController.cfg"
@@ -17,8 +19,10 @@ def connect():
 
 def disconnect():
     # Code to execute when the window is closed
-    if connection is not None:
-        connection.close()
+    
+    if not debug_waitForRedPitaya:
+        if connection is not None:
+            connection.close()
     root.destroy()
            
     
@@ -63,13 +67,19 @@ class fpgaValue:
         
     def refreshValues(self):
         for i in range(len(self.fpgaAddresses)):
-            self.currentValues[i] = connection.getBitString(self.fpgaAddresses[i], self.bitStartPositions[i], self.bitStringSizes[i])
+            if debug_waitForRedPitaya:
+                self.currentValues[i] = 0
+            else:
+                self.currentValues[i] = connection.getBitString(self.fpgaAddresses[i], self.bitStartPositions[i], self.bitStringSizes[i])
         self.refreshingFunction()
         
     def update(self, newValues):
         newValues = transformToList(newValues)        
         for i in range(len(newValues)):
-            connection.setBitString(self.fpgaAddresses[i], newValues[i], self.bitStartPositions[i], self.bitStringSizes[i])
+            if debug_waitForRedPitaya:
+                pass
+            else:
+                connection.setBitString(self.fpgaAddresses[i], newValues[i], self.bitStartPositions[i], self.bitStringSizes[i])
             self.currentValues[i] = newValues[i]
         self.updatingFunction()
             
@@ -122,7 +132,28 @@ class fpgaReadNumber(fpgaValue):
             self.toggleButton.bind("<ButtonRelease-1>", lambda x: (self.refreshValues(), self.tag.config(text= self.name + ': ' + str(self.currentValues[0]/multiplier))))
             self.tag.config(text= self.name + ': ' + str(self.currentValues[0]/multiplier))
         setOnGrid([self.tag, self.toggleButton], gridRow, gridColumnOffset)
-    
+
+
+class fpgaEnum(fpgaValue):
+    def __init__(self, name, fpgaAddress, bitStartPosition, enumValues, gridRow = 0, gridColumnOffset = 0):
+        super().__init__(name, fpgaAddress, bitStartPosition, len(enumValues).bit_length())
+        self.tag = tk.Label(root, text=name)     
+        self.enumValues = enumValues
+        self.radioButtons = [None] * len(enumValues)
+        
+        # Create a variable to hold the selected option
+        selected_option_var = tk.StringVar()
+        
+        # Set an initial value for the selected option
+        selected_option_var.initialize(enumValues[self.currentValues[0]])
+        
+        for i, option in enumerate(enumValues):
+            self.radioButtons[i] = tk.Radiobutton(root, text=option, variable=selected_option_var, value=option, 
+                                 command=lambda: self.update(enumValues.index(selected_option_var.get())))
+            
+        setOnGrid([self.tag] + self.radioButtons, gridRow, gridColumnOffset)
+        
+
 def getElementList(fileName, row, column):    
     with open(fileName, 'r') as file:
         elements = []
@@ -143,6 +174,8 @@ def getElementList(fileName, row, column):
 # ______________________________________________
 
 
+debug_waitForRedPitaya = False
+
 # Creazione della root principale
 root = tk.Tk()
 root.title("Red Pitaya Controller")
@@ -151,10 +184,11 @@ root.title("Red Pitaya Controller")
 # Creazione dell'indicatore
 canvas = tk.Canvas(root, width=25, height=25)
 
-print("waiting for ssh connection")
-connect()
-time.sleep(0.3)
-print("ready")
+if not debug_waitForRedPitaya:
+    print("waiting for ssh connection")
+    connect()
+    time.sleep(0.3)
+    print("ready")
 
 getElementList(elementListFile, 2, 0)
 
