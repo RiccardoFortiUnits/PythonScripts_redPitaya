@@ -24,8 +24,9 @@ def disconnect():
     
 def sendToPID():
     # Pulisce il contenuto corrente della casella di testo
-    output_text.delete("1.0", tk.END)
-
+    output_text.delete("1.0", tk.END)    
+    connection.asgSetOffset(0)
+    
     connection.pidDisableIntegral()
     for el in elements:
         el.callFunction(connection)
@@ -40,7 +41,9 @@ def stop_pid():
     connection.pidSetDerivative(0)
     # connection.setSetPoint(connection, 0)
 
+
 compile_n_sendFpga = False
+
 def change_compile_n_sendFpga(*args):
     global compile_n_sendFpga
     compile_n_sendFpga = not compile_n_sendFpga
@@ -177,7 +180,7 @@ disablePid = tk.Button(finestra, text="Disabilita PID", command=stop_pid)
 #creazione dei gestori dell'update FPGA
 updateFpga = tk.Button(finestra, text="Aggiorna FPGA", command=loadNewFpga)
 newFpgaName_text = tk.Entry(finestra)
-newFpgaName_text.insert(0, "doubleFilter 23_01_2024 14_57.bit.bin")
+newFpgaName_text.insert(0, "safeSwitch 13_02_2024 09_30.bit.bin")
 
 # Creazione della casella di testo per l'output
 output_text = tk.Text(finestra, height=5, width=30)
@@ -197,9 +200,11 @@ toggles = [\
     toggle("filtro lowPass", connection.pidSetLpFilter, 3,8,True,False, 0.9),\
     toggle("filtro generico", connection.pidSetGenFilter, 4,8,True,False, "[0.01,0][0.99]"),\
     toggle("level shifter", connection.pidSetVoltageShifter, 5,8,False),\
+    toggle("DC offset", connection.asgSetOffset, 0,8, True, False,  0.5),\
     ]
 enumToggles = [\
     enumToggle("feedback", ["no feedback", "negative feedback", "positive feedback", "no feedback, negated output"], connection.pidSetFeedback, 1,8),\
+    enumToggle("safeSwitch", ["disabled", "stopAtSaturation", "resetAtSaturation"], connection.pidSetSafeSwitch, 6,8),\
     enumToggle(    "carica/invia FPGA", \
                    ["compila e invia", "carica FPGA"] if compile_n_sendFpga else ["carica FPGA", "compila e invia"], \
                    change_compile_n_sendFpga, 7,8),\

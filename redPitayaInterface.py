@@ -129,8 +129,8 @@ class ShellHandler:
     #functions to set the values of the RAM, which will be read by the FPGA
     
     #generic function
-    def pidSetValue(self, address, multiplier, value):
-        value_toFpgaNumber = int(value * multiplier)
+    def pidSetValue(self, address, multiplier, value, shift=0):
+        value_toFpgaNumber = int(value * multiplier) << shift
         self.execute("monitor "+ str(address) + " " + str(value_toFpgaNumber))
     
     
@@ -202,6 +202,11 @@ class ShellHandler:
         self.pidSetValue(0x40300060, 1, denNumSplit)
         for i in range(len(numbers)):
             self.pidSetValue(0x40300064 + i*4, 2**20, numbers[i])
+    
+    def asgSetOffset(self, enable, value=0):
+        if not enable:
+            value = 0
+        self.pidSetValue(0x40200004, ((2**13)-1), value, 16)
             
         
 import re
