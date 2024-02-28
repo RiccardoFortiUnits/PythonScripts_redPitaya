@@ -28,6 +28,10 @@ else:
         outputImpedance = 50#100 if ("floor" in os.path.basename(path)) else 50
         if extension == '.trc':
             (data, samplingFreq, time) = lecroyInterface.getDataFromBinaryFile(path)
+        elif extension == '.csv':
+            (x, y) = sa.getSignalFromCsv(path)
+            data = y
+            time = x[-1]
         else:
             raise Exception("only .trc extension supported")
         

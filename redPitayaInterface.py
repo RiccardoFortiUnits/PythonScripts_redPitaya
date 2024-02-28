@@ -16,39 +16,50 @@ import redpitaya_scpi as scpi
 import time
 
 #ask the device to read 16K samples. The function also returns the sample frequency and overall time
-def getAcquisition():  
+def getAcquisition(repeats = 1):  
     IP = 'rp-f0be3a.local'
     
     rp_s = scpi.scpi(IP)
     
-    rp_s.tx_txt('ACQ:RST')
+    array = np.zeros(repeats * 0x4000)
+        
+    for i in range(repeats):
+        rp_s.tx_txt('ACQ:RST')
+        
+        dec = 1
+        
+        # Function for configuring Acquisition
+        rp_s.acq_set(dec)
+        
+        rp_s.tx_txt('ACQ:START')
+        rp_s.tx_txt('ACQ:TRIG NOW')
+        
+        while 1:
+            rp_s.tx_txt('ACQ:TRIG:STAT?')
+            if rp_s.rx_txt() == 'TD':
+                break
+        
+        while 1:
+            rp_s.tx_txt('ACQ:TRIG:FILL?')
+            if rp_s.rx_txt() == '1':
+                break
+        
+        # function for Data Acquisition
+        buff = rp_s.acq_data(1, convert= True)
+        array[i * 0x4000 : (i + 1) * 0x4000] = np.array(buff)
+        
+        if i >= 10 and (i*10) // repeats != ((i-1)*10) // repeats:
+            print(str(int(i / repeats * 100))+"%")
+        
     
-    dec = 1
-    
-    # Function for configuring Acquisition
-    rp_s.acq_set(dec)
-    
-    rp_s.tx_txt('ACQ:START')
-    rp_s.tx_txt('ACQ:TRIG NOW')
-    
-    while 1:
-        rp_s.tx_txt('ACQ:TRIG:STAT?')
-        if rp_s.rx_txt() == 'TD':
-            break
-    
-    while 1:
-        rp_s.tx_txt('ACQ:TRIG:FILL?')
-        if rp_s.rx_txt() == '1':
-            break
-    
-    # function for Data Acquisition
-    buff = rp_s.acq_data(1, convert= True)
     rp_s.close()
     
     samplingFreq = 125*10**6
-    time = len(buff) * 8*10**(-9)
+    time = len(buff) * 8*10**(-9) * repeats
     
-    return (np.array(buff), samplingFreq, time)
+    return (array, samplingFreq, time)
+
+
 
 class ShellHandler:
 
@@ -85,7 +96,7 @@ class ShellHandler:
         self.stdin.write(cmd + '\n')
 
         # Wait for the shell prompt
-        time.sleep(0.1)  # Adjust as needed
+        time.sleep(0.005)  # Adjust as needed
 
         # Set the channel to non-blocking
         self.channel.setblocking(0)
@@ -191,6 +202,7 @@ class ShellHandler:
     def pidSetGenFilter(self, enable, coefficientString):
         maxCoefficients = 8
         numbers, denNumSplit = extract_numbers_and_count(coefficientString)
+        numbers, denNumSplit = convertToGenericFilterCoefficients(numbers, denNumSplit)
         if len(numbers) > maxCoefficients:
             raise Exception("too many coefficients!")
         
@@ -227,5 +239,18 @@ def extract_numbers_and_count(input_string):
     return first_set_numbers + second_set_numbers, len(first_set_numbers) 
  
  
- 
- 
+def convertToGenericFilterCoefficients(numbers, denNumSplit):
+    #y[n] = sum(ai*y(n-i])) + sum(bj*x[n-j]])
+    #the generic filter cannot use y[n-1] (not fast to do it in one cycle), but we can still do everything:
+    #y[n-1] = sum(ai*y(n-i-1])) + sum(bj*x[n-j-1]]) =>
+    #y[n] = sum_{i!=1}(ai*y(n-i])) + sum(bj*x[n-j]]) + a1*(sum(ai*y(n-i-1])) + sum(bj*x[n-j-1]]))
+    #the term y[n-1] can be done using the previous values of y and x
+    #the structure of coefficients taken by the fpga will be [b0 b1...][a2 a3...]
+    b = numbers[:denNumSplit]
+    
+    a = numbers[denNumSplit:] #"a0" should always be 1
+    a1 = a[1]
+    newA = np.array(a[2:] + [0]) + a1 * np.array(a[1:])
+    newB = np.array(b + [0]) + np.array([0] + list(a1 * np.array(b)))
+    
+    return list(newB) + list(newA), len(newB)

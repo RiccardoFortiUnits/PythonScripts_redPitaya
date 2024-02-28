@@ -8,6 +8,7 @@ import numpy as np
 import lecroyInterface
 import matplotlib.pyplot as plt
 from scipy.signal import decimate
+import scipy
 import tkinter
 from tkinter import filedialog
 
@@ -22,6 +23,13 @@ if "C3" in fileName:
     (data1, samplingFreq1, time1) = lecroyInterface.getDataFromBinaryFile(fileName.replace("C3", "C2"))    
 else:
     (data1, samplingFreq1, time1) = lecroyInterface.getDataFromBinaryFile(fileName.replace("C2", "C3"))
+
+
+
+decimation = 50
+if decimation is not None:
+    data1 = scipy.signal.decimate(data1, decimation)
+    data = scipy.signal.decimate(data, decimation)
 
 samplesToPlot = len(data)
 

@@ -42,6 +42,15 @@ def getSpectrumAnalysis_ltSpice(file_csv, isDataIndB = True):
     array = data.to_numpy()
     return array[:,0], array[:,1]
 
+def getSignalFromCsv(file_csv):    
+    data = pd.read_csv(file_csv, low_memory=False, header= None)
+    try:
+        number = int(data[0][0])
+    except:
+        data = pd.read_csv(file_csv, low_memory=False, header= 1)
+    array = data.to_numpy()
+    return (array[:,0],array[:,1])
+
 #still not sure if the translation is correct...
     #anyway, the noise obtained by the Signal Hound (in dBm or mVrms, depending on the SH configuration) is 
     #converted in V/√Hz. To convert from mVrms, the file name must contain the string "mv"
@@ -55,25 +64,19 @@ def getSpectrumAnalysis_ltSpice(file_csv, isDataIndB = True):
 def getSpectrumAnalysis_signalHound(file_csv, isDataIndB = True, outputImpedance_Ohm = 50, inputInpedance = 50):
     if "mv" in os.path.basename(file_csv).split('/')[-1]:
         isDataIndB = False
-    
-    data = pd.read_csv(file_csv, low_memory=False, header= None)
-    try:
-        number = int(data[0][0])
-    except:
-        data = pd.read_csv(file_csv, low_memory=False, header= 1)
-    array = data.to_numpy()
-    binBand = 1/(array[1,0] - array[0,0])
+    x,y = getSignalFromCsv(file_csv)
+    binBand = 1 / (x[1] - x[0])
     # pg = 10*np.log10(len(array[:,0]))
     # print(binBand)
     # print("pg: " + str(pg) + "  | " + str(len(array[:,0])))    
     
     if isDataIndB:
         #multiply by the bin bandwidth, so that the output is normalized in frequency
-        return array[:,0], \
-            dBm_to_V_sqrtHz(array[:,1], outputImpedance_Ohm = outputImpedance_Ohm, inputImpedance_Ohm = inputInpedance)\
+        return x, \
+            dBm_to_V_sqrtHz(y, outputImpedance_Ohm = outputImpedance_Ohm, inputImpedance_Ohm = inputInpedance)\
                                             * np.sqrt(binBand)
     else:
-        return array[:,0], array[:,1]
+        return x, y
 
       
 def getSpectrumAnalysis_matlabNoise(file_csv):
