@@ -96,7 +96,7 @@ class ShellHandler:
         self.stdin.write(cmd + '\n')
 
         # Wait for the shell prompt
-        time.sleep(0.005)  # Adjust as needed
+        time.sleep(0.05)  # Adjust as needed
 
         # Set the channel to non-blocking
         self.channel.setblocking(0)

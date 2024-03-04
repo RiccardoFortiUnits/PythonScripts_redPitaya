@@ -99,7 +99,12 @@ class fpgaReadToggle(fpgaValue):
         self.toggleButton.bind("<ButtonRelease-1>", lambda x: (self.refreshValues(), self.tag.config(text= self.name + ': ' + ('false' if self.currentValues[0] > 0 else 'true'))))
         self.tag.config(text= self.name + ': ' + ('false' if self.currentValues[0] > 0 else 'true'))
         setOnGrid([self.tag, self.toggleButton], gridRow, gridColumnOffset)
-        
+
+def getSignedNumber(n, bitSize):
+    if n>>(bitSize-1) == 1:#negative number?
+        n = n | ~((1<<bitSize) - 1)
+    return n
+    
 class fpgaNumber(fpgaValue):
     def __init__(self, name, fpgaAddress, bitStartPosition, bitSize, multiplier = None, initialValue = None, gridRow = 0, gridColumnOffset = 0):
         super().__init__(name, fpgaAddress, bitStartPosition, bitSize)
@@ -107,14 +112,16 @@ class fpgaNumber(fpgaValue):
         self.multiplier = multiplier
         self.tag = tk.Label(root, text=name)
         self.entry = tk.Entry(root)
-        if initialValue is None:
-            initialValue = self.currentValues[0]
         
         if multiplier is None:
+            if initialValue is None:
+                initialValue = self.currentValues[0]
             self.entry.insert(0, hex(initialValue))
             self.entry.bind("<Return>", lambda x: self.update(int(readNumber(self.entry.get()))))
         else:
-            self.entry.insert(0, str(initialValue*self.multiplier))
+            if initialValue is None:
+                initialValue = getSignedNumber(self.currentValues[0], bitSize) / self.multiplier
+            self.entry.insert(0, str(initialValue))
             self.entry.bind("<Return>", lambda x: self.update(int(readNumber(self.entry.get())*self.multiplier)))
         setOnGrid([self.tag, self.entry], gridRow, gridColumnOffset)
 
@@ -130,28 +137,34 @@ class fpgaReadNumber(fpgaValue):
             self.tag.config(text= self.name + ': ' + hex(self.currentValues[0]))
         else:
             self.toggleButton.bind("<ButtonRelease-1>", lambda x: (self.refreshValues(), self.tag.config(text= self.name + ': ' + str(self.currentValues[0]/multiplier))))
-            self.tag.config(text= self.name + ': ' + str(self.currentValues[0]/multiplier))
+            self.tag.config(text= self.name + ': ' + str(getSignedNumber(self.currentValues[0], bitSize) / multiplier))
         setOnGrid([self.tag, self.toggleButton], gridRow, gridColumnOffset)
 
 
 class fpgaEnum(fpgaValue):
     def __init__(self, name, fpgaAddress, bitStartPosition, enumValues, gridRow = 0, gridColumnOffset = 0):
-        super().__init__(name, fpgaAddress, bitStartPosition, len(enumValues).bit_length())
+        super().__init__(name, fpgaAddress, bitStartPosition, (len(enumValues)-1).bit_length())
         self.tag = tk.Label(root, text=name)     
         self.enumValues = enumValues
         self.radioButtons = [None] * len(enumValues)
         
         # Create a variable to hold the selected option
         selected_option_var = tk.StringVar()
-        
-        # Set an initial value for the selected option
-        selected_option_var.initialize(enumValues[self.currentValues[0]])
-        
+                
         for i, option in enumerate(enumValues):
             self.radioButtons[i] = tk.Radiobutton(root, text=option, variable=selected_option_var, value=option, 
                                  command=lambda: self.update(enumValues.index(selected_option_var.get())))
+        
+        # Set an initial value for the selected option
+        selected_option_var.initialize(enumValues[self.currentValues[0]])
             
         setOnGrid([self.tag] + self.radioButtons, gridRow, gridColumnOffset)
+        
+
+class divider():
+    def __init__(self, color, gridRow = 0, gridColumnOffset = 0):        
+        line = tk.Frame(root, height=10, width=100, bg=color)
+        setOnGrid(line, gridRow, gridColumnOffset)
         
 
 def getElementList(fileName, row, column):    
@@ -162,7 +175,7 @@ def getElementList(fileName, row, column):
             line = line.strip()
     
             # Check if the line is not empty
-            if line:
+            if line and line[0] != '#':
                 lineWithRows = line.replace(')',', gridRow= '+str(row)+', gridColumnOffset='+str(column)+')')
                 row = row + 1
                 # Evaluate the line to create the object
