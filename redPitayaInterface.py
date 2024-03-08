@@ -85,7 +85,7 @@ class ShellHandler:
         self.__init__("rp-f0be3a.local", "root", "root", 'ecdsa-sha2-nistp256', key)
         self.execute("echo")
 
-    def execute(self, cmd):
+    def execute(self, cmd, delayTime = 0.05):
         cmd = cmd.strip('\n')
         
         # Clear any pending data in the input and output streams
@@ -96,7 +96,7 @@ class ShellHandler:
         self.stdin.write(cmd + '\n')
 
         # Wait for the shell prompt
-        time.sleep(0.05)  # Adjust as needed
+        time.sleep(delayTime)  # Adjust as needed
 
         # Set the channel to non-blocking
         self.channel.setblocking(0)

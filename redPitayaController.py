@@ -60,10 +60,6 @@ class fpgaValue:
         self.currentValues = [0]*len(fpgaAddresses)
         self.refreshValues()
         
-    def refreshingFunction(self, *args):
-        pass
-    def updatingFunction(self, *args):
-        pass
         
     def refreshValues(self):
         for i in range(len(self.fpgaAddresses)):
@@ -71,7 +67,6 @@ class fpgaValue:
                 self.currentValues[i] = 0
             else:
                 self.currentValues[i] = connection.getBitString(self.fpgaAddresses[i], self.bitStartPositions[i], self.bitStringSizes[i])
-        self.refreshingFunction()
         
     def update(self, newValues):
         newValues = transformToList(newValues)        
@@ -81,7 +76,6 @@ class fpgaValue:
             else:
                 connection.setBitString(self.fpgaAddresses[i], newValues[i], self.bitStartPositions[i], self.bitStringSizes[i])
             self.currentValues[i] = newValues[i]
-        self.updatingFunction()
             
 class fpgaToggle(fpgaValue):
     def __init__(self, name, fpgaAddress, bitStartPosition, gridRow = 0, gridColumnOffset = 0):
@@ -147,23 +141,31 @@ class fpgaEnum(fpgaValue):
         self.tag = tk.Label(root, text=name)     
         self.enumValues = enumValues
         self.radioButtons = [None] * len(enumValues)
+        #if an enum value is "", it means that the associated number does not have an associated 
+            #enum state, and we shouldn't be able to set the enum to that value. Thus, we will only 
+            #show the radioButtons for the available enums
+        usedRadioButtons = [None] * len(enumValues)
+        nOf_usedRadioButtons = 0
         
         # Create a variable to hold the selected option
         selected_option_var = tk.StringVar()
-                
+        
         for i, option in enumerate(enumValues):
             self.radioButtons[i] = tk.Radiobutton(root, text=option, variable=selected_option_var, value=option, 
                                  command=lambda: self.update(enumValues.index(selected_option_var.get())))
+            if option != "":
+                usedRadioButtons[nOf_usedRadioButtons] = self.radioButtons[i]
+                nOf_usedRadioButtons = nOf_usedRadioButtons + 1
         
         # Set an initial value for the selected option
         selected_option_var.initialize(enumValues[self.currentValues[0]])
             
-        setOnGrid([self.tag] + self.radioButtons, gridRow, gridColumnOffset)
+        setOnGrid([self.tag] + usedRadioButtons[:nOf_usedRadioButtons], gridRow, gridColumnOffset)
         
 
 class divider():
     def __init__(self, color, gridRow = 0, gridColumnOffset = 0):        
-        line = tk.Frame(root, height=10, width=100, bg=color)
+        line = tk.Frame(root, height=2, width=100, bg=color)
         setOnGrid(line, gridRow, gridColumnOffset)
         
 
