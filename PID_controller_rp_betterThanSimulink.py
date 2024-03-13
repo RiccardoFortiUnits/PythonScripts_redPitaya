@@ -180,7 +180,7 @@ disablePid = tk.Button(finestra, text="Disabilita PID", command=stop_pid)
 #creazione dei gestori dell'update FPGA
 updateFpga = tk.Button(finestra, text="Aggiorna FPGA", command=loadNewFpga)
 newFpgaName_text = tk.Entry(finestra)
-newFpgaName_text.insert(0, "safeSwitch 13_02_2024 09_30.bit.bin")
+newFpgaName_text.insert(0, "linearizer 11_03_2024 14_45.bit.bin")
 
 # Creazione della casella di testo per l'output
 output_text = tk.Text(finestra, height=5, width=30)

@@ -76,51 +76,56 @@ class fpgaValue:
             else:
                 connection.setBitString(self.fpgaAddresses[i], newValues[i], self.bitStartPositions[i], self.bitStringSizes[i])
             self.currentValues[i] = newValues[i]
-            
-class fpgaToggle(fpgaValue):
-    def __init__(self, name, fpgaAddress, bitStartPosition, gridRow = 0, gridColumnOffset = 0):
+
+class canvasElement:
+    def place(self, gridRow = 0, gridColumnOffset = 0):
+        setOnGrid(self.UI_elements, gridRow, gridColumnOffset)
+
+class fpgaToggle(fpgaValue, canvasElement):
+    def __init__(self, name, fpgaAddress, bitStartPosition):
         super().__init__(name, fpgaAddress, bitStartPosition, 1)
         self.toggle = tk.IntVar()
         # Associate the variable with the Checkbutton
         self.checkbox = tk.Checkbutton(root, text= name, variable= self.toggle, command= lambda: self.update(self.toggle.get()))
         self.toggle.set(self.currentValues)
-        setOnGrid(self.checkbox, gridRow, gridColumnOffset)
-class fpgaReadToggle(fpgaValue):
-    def __init__(self, name, fpgaAddress, bitStartPosition, gridRow = 0, gridColumnOffset = 0):
+        self.UI_elements = [self.checkbox]
+class fpgaReadToggle(fpgaValue, canvasElement):
+    def __init__(self, name, fpgaAddress, bitStartPosition):
         super().__init__(name, fpgaAddress, bitStartPosition, 1)
         self.tag = tk.Label(root, text=name)        
         self.toggleButton = tk.Button(root, text="refresh")
         self.toggleButton.bind("<ButtonRelease-1>", lambda x: (self.refreshValues(), self.tag.config(text= self.name + ': ' + ('false' if self.currentValues[0] > 0 else 'true'))))
         self.tag.config(text= self.name + ': ' + ('false' if self.currentValues[0] > 0 else 'true'))
-        setOnGrid([self.tag, self.toggleButton], gridRow, gridColumnOffset)
+        self.UI_elements = [self.tag, self.toggleButton]
 
 def getSignedNumber(n, bitSize):
     if n>>(bitSize-1) == 1:#negative number?
         n = n | ~((1<<bitSize) - 1)
     return n
     
-class fpgaNumber(fpgaValue):
-    def __init__(self, name, fpgaAddress, bitStartPosition, bitSize, multiplier = None, initialValue = None, gridRow = 0, gridColumnOffset = 0):
+class fpgaNumber(fpgaValue, canvasElement):
+    def __init__(self, name, fpgaAddress, bitStartPosition, bitSize, multiplier = None, initialValue = None):
         super().__init__(name, fpgaAddress, bitStartPosition, bitSize)
         # Associate the variable with the Checkbutton
         self.multiplier = multiplier
         self.tag = tk.Label(root, text=name)
         self.entry = tk.Entry(root)
         
+        self.entry.bind("<KeyRelease>", lambda x: self.entry.config(bg="white" if x.keysym == 'Return' else "yellow"))
         if multiplier is None:
             if initialValue is None:
                 initialValue = self.currentValues[0]
             self.entry.insert(0, hex(initialValue))
-            self.entry.bind("<Return>", lambda x: self.update(int(readNumber(self.entry.get()))))
+            self.entry.bind("<Return>", lambda x: (self.update(int(readNumber(self.entry.get()))), self.entry.config(bg="white")))
         else:
             if initialValue is None:
                 initialValue = getSignedNumber(self.currentValues[0], bitSize) / self.multiplier
             self.entry.insert(0, str(initialValue))
-            self.entry.bind("<Return>", lambda x: self.update(int(readNumber(self.entry.get())*self.multiplier)))
-        setOnGrid([self.tag, self.entry], gridRow, gridColumnOffset)
+            self.entry.bind("<Return>", lambda x: (self.update(int(readNumber(self.entry.get())*self.multiplier)), self.entry.config(bg="white")))
+        self.UI_elements = [self.tag, self.entry]
 
-class fpgaReadNumber(fpgaValue):
-    def __init__(self, name, fpgaAddress, bitStartPosition, bitSize, multiplier = None, gridRow = 0, gridColumnOffset = 0):
+class fpgaReadNumber(fpgaValue, canvasElement):
+    def __init__(self, name, fpgaAddress, bitStartPosition, bitSize, multiplier = None):
         super().__init__(name, fpgaAddress, bitStartPosition, bitSize)
         # Associate the variable with the Checkbutton
         self.multiplier = multiplier
@@ -132,11 +137,11 @@ class fpgaReadNumber(fpgaValue):
         else:
             self.toggleButton.bind("<ButtonRelease-1>", lambda x: (self.refreshValues(), self.tag.config(text= self.name + ': ' + str(self.currentValues[0]/multiplier))))
             self.tag.config(text= self.name + ': ' + str(getSignedNumber(self.currentValues[0], bitSize) / multiplier))
-        setOnGrid([self.tag, self.toggleButton], gridRow, gridColumnOffset)
+        self.UI_elements = [self.tag, self.toggleButton]
 
 
-class fpgaEnum(fpgaValue):
-    def __init__(self, name, fpgaAddress, bitStartPosition, enumValues, gridRow = 0, gridColumnOffset = 0):
+class fpgaEnum(fpgaValue, canvasElement):
+    def __init__(self, name, fpgaAddress, bitStartPosition, enumValues):
         super().__init__(name, fpgaAddress, bitStartPosition, (len(enumValues)-1).bit_length())
         self.tag = tk.Label(root, text=name)     
         self.enumValues = enumValues
@@ -160,13 +165,13 @@ class fpgaEnum(fpgaValue):
         # Set an initial value for the selected option
         selected_option_var.initialize(enumValues[self.currentValues[0]])
             
-        setOnGrid([self.tag] + usedRadioButtons[:nOf_usedRadioButtons], gridRow, gridColumnOffset)
+        self.UI_elements = [self.tag] + usedRadioButtons[:nOf_usedRadioButtons]
         
 
-class divider():
-    def __init__(self, color, gridRow = 0, gridColumnOffset = 0):        
+class divider(canvasElement):
+    def __init__(self, color):        
         line = tk.Frame(root, height=2, width=100, bg=color)
-        setOnGrid(line, gridRow, gridColumnOffset)
+        self.UI_elements = [line]
         
 
 def getElementList(fileName, row, column):    
@@ -178,10 +183,18 @@ def getElementList(fileName, row, column):
     
             # Check if the line is not empty
             if line and line[0] != '#':
-                lineWithRows = line.replace(')',', gridRow= '+str(row)+', gridColumnOffset='+str(column)+')')
-                row = row + 1
                 # Evaluate the line to create the object
-                obj = eval(lineWithRows)
+                obj = eval(line)
+                if isinstance(obj, tuple):
+                    c = column                
+                    for o in obj:
+                        o.place(row, c)
+                        c = c + len(o.UI_elements)
+                else:
+                    obj.place(row, column)
+                    
+                    
+                row = row + 1
     
                 # Append the created object to the list
                 elements.append(obj)    
@@ -203,7 +216,7 @@ if not debug_waitForRedPitaya:
     print("waiting for ssh connection")
     connect()
     time.sleep(0.3)
-    print("ready")
+    print("preparing UI")
 
 getElementList(elementListFile, 2, 0)
 
