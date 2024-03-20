@@ -62,7 +62,7 @@ def getSignalFromCsv(file_csv):
     #source (i.e. "before" its output impedance)
     #This function lets you choose a different output source impedance (outputImpedance_Ohm)        
 def getSpectrumAnalysis_signalHound(file_csv, isDataIndB = True, outputImpedance_Ohm = 50, inputInpedance = 50):
-    if "mv" in os.path.basename(file_csv).split('/')[-1]:
+    if "_mv" in os.path.basename(file_csv).split('/')[-1]:
         isDataIndB = False
     x,y = getSignalFromCsv(file_csv)
     binBand = 1 / (x[1] - x[0])

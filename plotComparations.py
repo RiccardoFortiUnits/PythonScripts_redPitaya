@@ -28,7 +28,7 @@ def getFromFile(path):
     if extension == '.txt':
         x, y = getSpectrumAnalysis_ltSpice(path)
     if extension == '.csv':
-        x, y = getSpectrumAnalysis_signalHound(path, outputImpedance_Ohm = outputImpedance, isDataIndB=False)
+        x, y = getSpectrumAnalysis_signalHound(path, outputImpedance_Ohm = outputImpedance)
     if extension == '.mcsv':#csv obtained from Matlab
         x, y = getSpectrumAnalysis_matlabNoise(path)    
     if extension == '.trc':

@@ -14,6 +14,7 @@ plt.rcParams['agg.path.chunksize'] = 10000
 import numpy as np
 import redpitaya_scpi as scpi
 import time
+from datetime import datetime, timedelta
 
 #ask the device to read 16K samples. The function also returns the sample frequency and overall time
 def getAcquisition(repeats = 1):  
@@ -86,6 +87,23 @@ class ShellHandler:
         self.execute("echo")
 
     def execute(self, cmd, delayTime = 0.05):
+        response = self.roughCommand(cmd,delayTime=delayTime)
+        
+        # Remove the command and prompt lines from the response
+        lines = response.splitlines()
+        response = '\n'.join(lines[2:len(lines) - 1])
+        
+        return response
+    
+    
+    def getCurrentFolder(self, cmd, delayTime = 0.05):
+        response = self.roughCommand(cmd,delayTime=delayTime)
+        
+        # Remove the command and prompt lines from the response
+        lines = response.splitlines()
+        response = '\n'.join(lines[2:len(lines) - 1])
+    
+    def roughCommand(self, cmd, delayTime = 0.05):
         cmd = cmd.strip('\n')
         
         # Clear any pending data in the input and output streams
@@ -123,12 +141,8 @@ class ShellHandler:
         # Set the channel back to blocking
         self.channel.setblocking(1)
 
-        # Remove the command and prompt lines from the response
-        lines = response.splitlines()
-        response = '\n'.join(lines[2:len(lines) - 1])
-
         return response
-
+    
 
     
     def copyFile(self, localpath, remotepath):
@@ -149,6 +163,7 @@ class ShellHandler:
     #     self.execute("monitor "+ str(address) + " " + str(value))
         
     def setBitString(self, address, value, startBit, stringSize):#the value isn't shifted yet
+        value = int(value)
         prevRegValue = int(self.execute("monitor "+ str(address)), 0x10)
         bitMask = (((1 << stringSize) - 1) << startBit)
         prevRegValue = prevRegValue & ( -1 - bitMask)#remove previous value
@@ -192,9 +207,6 @@ class ShellHandler:
     def pidSetFeedback(self, enable):
         ShellHandler.configValValue = ShellHandler.configValValue & ~(0x3 << 0) | (enable << 0)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
-    def pidSetVoltageShifter(self, enable):
-        ShellHandler.configValValue = ShellHandler.configValValue & ~(0x1 << 15) | (enable << 15)
-        self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
     def pidSetSafeSwitch(self, value):
         ShellHandler.configValValue = ShellHandler.configValValue & ~(0x3 << 16) | (value << 16)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
@@ -219,7 +231,40 @@ class ShellHandler:
         if not enable:
             value = 0
         self.pidSetValue(0x40200004, ((2**13)-1), value, 16)
+    
+    def pidSetLinearizer(self, enable, samplesString):
+        maxSamples = 8
+        numbers, denNumSplit = extract_numbers_and_count(samplesString)
+        x = np.array(numbers[0:denNumSplit])
+        y = np.array(numbers[denNumSplit:])
+        if(len(x) > maxSamples+1 or len(y) != len(x)):
+            raise Exception("incorrect number of samples!")
+        
+        (s,q,m) = segmentedCoefficient(x,y)
+        
+        s = np.append(s,[-1] * (maxSamples - len(m)))
+        q = np.append(q,[0] * (maxSamples - len(m)))
+        m = np.append(m,[0] * (maxSamples - len(m)))
+        
+        for i in range(maxSamples):
+            self.setBitString(0x403000A0 + i*8, s[i]*(2**13-1), 0, 14)
+            self.setBitString(0x403000A0 + i*8, q[i]*(2**13-1), 14, 14)
+            self.setBitString(0x403000A4 + i*8, m[i]*(2**24-1), 0, 32)
             
+        ShellHandler.configValValue = ShellHandler.configValValue & ~(0x1 << 15) | (enable << 15)
+        self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
+            
+
+def segmentedCoefficient(x,y):
+    a = x[0:len(x)-1]
+    b = x[1:]
+    c = y[0:len(y)-1]
+    d = y[1:]
+    
+    m = (d-c) / (b-a)
+    s = a
+    q = c
+    return (s,q,m)
         
 import re
 
