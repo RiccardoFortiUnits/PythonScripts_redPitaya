@@ -63,9 +63,9 @@ else:
         for path in folder_path:
             x,y = getFromFile(path)
             
-            y = y0 / y
+            y = y / y0
             
             X.append(x)
             Y.append(y)
             
-        sa.plotNSD(X,Y, paths = ["0dB"] + list(folder_path))#, linearY=True)#, linearY=True)
+        sa.plotNSD(X,Y, paths = ["0dB"] + list(folder_path) )# , linearY=True )# , linearY=True)
