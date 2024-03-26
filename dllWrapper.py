@@ -135,12 +135,22 @@ class dllWrapper:
         
         if "uint8_t" in token:
             return ctypes.c_uint8
-        if "int32_t" in token:
-            return ctypes.c_int32
+        if "int8_t" in token:
+            return ctypes.c_int8
         if "uint32_t" in token:
             return ctypes.c_uint32
+        if "int32_t" in token:
+            return ctypes.c_int32
         if "char" in token:
             return ctypes.c_char
+        if "uint" in token:
+            return ctypes.c_int
+        if "int" in token:
+            return ctypes.c_int
+        if "ulong" in token:
+            return ctypes.c_ulong
+        if "long" in token:
+            return ctypes.c_long
         if "double" in token:
             return ctypes.c_double
         if "float" in token:
@@ -155,14 +165,24 @@ class dllWrapper:
     def voidPointerTo(array, arrayType = ctypes.c_uint8):
         return (arrayType * len(array))(*array)
 
-# # Example usage:
-# q = dllWrapper("C:/Users/lastline/Desktop/Hamamatsu_SLM/USB_Control_SDK/hpkSLMdaLV_cdecl_64bit/hpkSLMdaLV.dll")
 
-# q.addFunction("uint32_t Write_SDBMPPath(uint8_t bID, uint8_t *Path, uint32_t SDSlotNo)")
+# """
+#  Example usage:
+#   obtain and use the following function from the dll
+  
+#     int increment(uint8_t* numberLocation, uint8_t incrementer) {
+#     	(*numberLocation) += incrementer;
+#         return (int) numberLocation;
+#     }
 
-# q.Write_SDBMPPath(1, dllWrapper.voidPointerTo([1,2,3]), 3)
+# """
+# q = dllWrapper("exampleDll.dll")
+# q.addFunction("int increment(uint8_t* numberLocation, uint8_t incrementer)")
+# pointerValue, (newValue, incrementer) = q.increment([52], 3)
 
 
+
+# from dllWrapper import dllWrapper
 
 # slm = dllWrapper("C:/Users/lastline/Desktop/Hamamatsu_SLM/USB_Control_SDK/hpkSLMdaLV_cdecl_64bit/hpkSLMdaLV.dll")
 
@@ -186,4 +206,7 @@ class dllWrapper:
 # slm.addFunction("int32_t Upload_from_SD_to_FMem(uint8_t bID, uint32_t SDSlotNo, uint32_t FMemSlotNo)")
 
 
+# q = dllWrapper("C:/Users/lastline/source/repos/exampleDll/x64/Debug/exampleDll.dll")
+# q.addFunction("char secondChar(char* string)")
+# q.secondChar([ord(i) for i in list("abcd")])
 

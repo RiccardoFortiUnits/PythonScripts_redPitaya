@@ -38,7 +38,7 @@ def getFromFile(path):
 
 root = tkinter.Tk()
 root.withdraw() # prevents an empty tkinter window from appearing
-root.grab_set()  # Make the root window modal
+# root.grab_set()  # Make the root window modal
 folder_path = filedialog.askopenfilenames(filetypes=[("csv files", "*.*")])
 
 

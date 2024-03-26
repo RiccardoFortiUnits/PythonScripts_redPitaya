@@ -151,6 +151,24 @@ class ShellHandler:
         sftp.close()
         
         
+    def getLastModifiedFile(self, remotePath):    
+        sftp = self.ssh.open_sftp()
+        
+        # Get the list of files in the folder
+        files = sftp.listdir_attr(remotePath)
+        
+        # Find the file with the greatest modified time
+        last_modified_file = max(files, key=lambda f: f.st_mtime)
+        
+        # Extract the filename
+        filename = last_modified_file.filename
+        
+        # Print the filename (you can perform other actions with this file)
+        print(f"Last modified file in '{remotePath}': {filename}")
+        
+        # Close the SFTP session and SSH connection
+        sftp.close()
+        
     #functions to set the values of the RAM, which will be read by the FPGA
     
     #generic function
@@ -204,6 +222,9 @@ class ShellHandler:
     def pidSetDelay(self, enable, delay = 0):
         ShellHandler.configValValue = ShellHandler.configValValue & ~((1 << 2) | (0x3FF << 3)) | (enable << 2) | (int(delay) << 3)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
+    def pidSetPwmSetpoint(self, enable, value = 0):        
+        self.setBitString(0x40400020, value * 255 / 1.8, 16, 8)
+        
     def pidSetFeedback(self, enable):
         ShellHandler.configValValue = ShellHandler.configValValue & ~(0x3 << 0) | (enable << 0)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)

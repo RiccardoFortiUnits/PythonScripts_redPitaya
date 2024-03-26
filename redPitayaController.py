@@ -174,6 +174,11 @@ class divider(canvasElement):
         self.UI_elements = [line]
         
 
+def setStandardElements(row, column):  
+    
+    
+    return row
+
 def getElementList(fileName, row, column):    
     with open(fileName, 'r') as file:
         elements = []
@@ -218,6 +223,7 @@ if not debug_waitForRedPitaya:
     time.sleep(0.3)
     print("preparing UI")
 
+nextRow = setStandardElements(2, 0)
 getElementList(elementListFile, 2, 0)
 
     
