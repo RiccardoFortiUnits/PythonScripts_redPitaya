@@ -30,7 +30,7 @@ class dllWrapper:
             function: A Python function that calls the specified C function from the DLL.
         """
         # Parse the C function declaration
-        return_type, function_name, args = dllWrapper.parse_c_function_declaration(c_function_declaration)
+        return_type, function_name, args, argNames = dllWrapper.parse_c_function_declaration(c_function_declaration)
 
         # Load the DLL
         if type(dll) == str:    
@@ -51,11 +51,15 @@ class dllWrapper:
             # c_args = [arg_type(arg) for arg, arg_type in zip(args, c_function.argtypes)]
             for i in range(len(args)):
                 if str(type(c_function.argtypes[i])) == "<class '_ctypes.PyCPointerType'>":
+                    if type(args[i]) == str:
+                        currArg = args[i].encode('utf-8')
+                    else:
+                        currArg = args[i]
                     try:
                         l = len(args[i])
-                        ret_args[i] = (c_function.argtypes[i]._type_ * l)(*args[i])
+                        ret_args[i] = (c_function.argtypes[i]._type_ * l)(*currArg)
                     except:
-                        ret_args[i] = (c_function.argtypes[i]._type_ * 1)(args[i]) 
+                        ret_args[i] = (c_function.argtypes[i]._type_ * 1)(currArg) 
                         
                 elif c_function.argtypes[i] == ctypes.c_void_p:
                     ret_args[i] = ctypes.cast(args[i], c_function.argtypes[i])
@@ -63,24 +67,22 @@ class dllWrapper:
                     ret_args[i] = c_function.argtypes[i](args[i])
             # Call the C function
             
+            retObj = {}
+            
             if return_type != type(None):
-                retVal = c_function(*ret_args)
+                retObj["return"] = c_function(*ret_args)
             else:
                 c_function(*ret_args)
             
-            
-            updatedInputs = [None] * len(args)
             for i in range(len(args)):
                 if str(type(c_function.argtypes[i])) == "<class '_ctypes.PyCPointerType'>":
-                    updatedInputs[i] = list(ret_args[i])
+                    retObj[argNames[i]] = list(ret_args[i])
+                    if type(args[i]) == str:
+                        retObj[argNames[i]] = b''.join(retObj[argNames[i]]).decode('utf-8')
                 else:
-                    updatedInputs[i] = ret_args[i].value
-            if len(args) == 1:
-                updatedInputs = updatedInputs[0]
-            if return_type != type(None):
-                return retVal, updatedInputs
-            else:
-                return updatedInputs
+                    retObj[argNames[i]] = ret_args[i].value
+            
+            return retObj
     
         return python_function, function_name
     
@@ -118,8 +120,9 @@ class dllWrapper:
                     argument_types[-1] = ctypes.c_void_p
                 else:
                     argument_types[-1] = ctypes.POINTER(argument_types[-1])
+            names[i] = ''.join([char for char in names[i] if char not in '*[](), '])
         
-        return return_type, function_name, argument_types
+        return return_type, function_name, argument_types, names
     
     @staticmethod
     def parse_argument_type(token):
@@ -135,12 +138,22 @@ class dllWrapper:
         
         if "uint8_t" in token:
             return ctypes.c_uint8
-        if "int32_t" in token:
-            return ctypes.c_int32
+        if "int8_t" in token:
+            return ctypes.c_int8
         if "uint32_t" in token:
             return ctypes.c_uint32
+        if "int32_t" in token:
+            return ctypes.c_int32
         if "char" in token:
             return ctypes.c_char
+        if "uint" in token:
+            return ctypes.c_int
+        if "int" in token:
+            return ctypes.c_int
+        if "ulong" in token:
+            return ctypes.c_ulong
+        if "long" in token:
+            return ctypes.c_long
         if "double" in token:
             return ctypes.c_double
         if "float" in token:
@@ -155,14 +168,25 @@ class dllWrapper:
     def voidPointerTo(array, arrayType = ctypes.c_uint8):
         return (arrayType * len(array))(*array)
 
-# # Example usage:
-# q = dllWrapper("C:/Users/lastline/Desktop/Hamamatsu_SLM/USB_Control_SDK/hpkSLMdaLV_cdecl_64bit/hpkSLMdaLV.dll")
 
-# q.addFunction("uint32_t Write_SDBMPPath(uint8_t bID, uint8_t *Path, uint32_t SDSlotNo)")
+# """
+#  Example usage:
+#   obtain and use the following function from the dll
+  
+#     int increment(uint8_t* numberLocation, uint8_t incrementer) {
+#     	(*numberLocation) += incrementer;
+#         return (int) numberLocation;
+#     }
 
-# q.Write_SDBMPPath(1, dllWrapper.voidPointerTo([1,2,3]), 3)
+# """
+# q = dllWrapper("./exampleDll.dll")
+# q.addFunction("int increment(uint8_t* numberToIncrement, uint8_t incrementer)")
+# ret = q.increment([20], 3)
+# print(ret)
 
 
+
+# from dllWrapper import dllWrapper
 
 # slm = dllWrapper("C:/Users/lastline/Desktop/Hamamatsu_SLM/USB_Control_SDK/hpkSLMdaLV_cdecl_64bit/hpkSLMdaLV.dll")
 
@@ -186,4 +210,7 @@ class dllWrapper:
 # slm.addFunction("int32_t Upload_from_SD_to_FMem(uint8_t bID, uint32_t SDSlotNo, uint32_t FMemSlotNo)")
 
 
+# q = dllWrapper("C:/Users/lastline/source/repos/exampleDll/x64/Debug/exampleDll.dll")
+# q.addFunction("char secondChar(char* string)")
+# q.secondChar([ord(i) for i in list("abcd")])
 

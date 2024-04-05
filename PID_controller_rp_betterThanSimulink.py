@@ -196,7 +196,8 @@ elements = [\
     element("set point (V)", connection.pidSetSetPoint, 4, 0.0),\
     ]
 toggles = [\
-    toggle("delay", connection.pidSetDelay, 2,8,True,False, 300),\
+    #toggle("delay", connection.pidSetDelay, 2,8,True,False, 300),\
+    toggle("PWMsetpoint", connection.pidSetPwmSetpoint, 2,8,True,False, 0),\
     toggle("filtro lowPass", connection.pidSetLpFilter, 3,8,True,False, 0.9),\
     toggle("filtro generico", connection.pidSetGenFilter, 4,8,True,False, "[0.01,0][1,0.99]"),\
     toggle("linearizer", connection.pidSetLinearizer, 5,8,True,False, "[-1,0.019283939731896,0.032590515583281,0.190926157824052,0.704166283061034,0.861064754066206,0.965351031553027,1][0,0,0.125017474264530,0.278875411577059,0.610845691806975,0.739630993553370,0.871737897932114,1]"),\

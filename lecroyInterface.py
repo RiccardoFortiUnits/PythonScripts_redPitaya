@@ -24,6 +24,33 @@ def decimateAndReduceToMaxes(y, sampleFreq, finalSampleFreq):
         out[i] = np.max(y[startIndex : startIndex + decimation])
     return out
 
+from datetime import datetime
+
+def getDataFromMultimeterLogFile(path):
+    #not actually for a lecroy device, but I can't be bothered to create a new file just for this
+    #read data from a file created in labview where each line has the format "yyy.mm.dd_hh.mm.ss\t\tvalue"
+    with open(path, 'r') as file:
+        timestamps = np.zeros(sum(1 for line in file))
+        values = np.zeros(len(timestamps))
+    
+    with open(path, 'r') as file:
+        i=0
+        for line in file:
+            parts = line.strip().split('\t\t')
+            
+            timestamp_str, value_str = parts
+            timestamps[i] = int(datetime.strptime(timestamp_str, "%Y.%m.%d_%H.%M.%S").timestamp())
+            values[i] = float(value_str)  # Assuming values are numeric (adjust as needed)
+            
+            i = i+1
+        timestamps = timestamps - timestamps[0]
+        return timestamps, values
+
+# import spectrumAnalyser as sa
+# (x,y)=getDataFromMultimeterLogFile("D:/2024.04.03_15.01.01_.log")
+# sa.plotSignal([x],[y])
+
+
 # import spectrumAnalyser as sa
 # fs = 20000
 # ffs = fs // 600

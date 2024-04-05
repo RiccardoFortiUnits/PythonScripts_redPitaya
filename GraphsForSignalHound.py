@@ -37,6 +37,10 @@ else:
         if extension == '.trc':
             (data, samplingFreq, time) = lecroyInterface.getDataFromBinaryFile(path)
             x,y=sa.getNSD(data, samplingFreq)
+        if extension == '.log':
+            x, y = lecroyInterface.getDataFromMultimeterLogFile(path)   
+            x,y = sa.getNSD(y, 1/(x[1]-x[0]))
+            
         #if extension == '.ini':
             #do nothing
                 

@@ -32,8 +32,11 @@ else:
             (x, y) = sa.getSignalFromCsv(path)
             data = y
             time = x[-1]
+        if extension == '.log':
+            x, data = lecroyInterface.getDataFromMultimeterLogFile(path) 
+            time = x[-1]
         else:
-            raise Exception("only .trc extension supported")
+            raise Exception("extension not supported")
         
         Y.append(data)
         X.append(np.linspace(0, time, len(data)))
