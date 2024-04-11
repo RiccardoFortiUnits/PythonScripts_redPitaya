@@ -23,11 +23,24 @@ class dllWrapper:
         Creates a Python function that calls a C function from a DLL.
     
         Args:
-            dll (ctypes.CDLL): the DLL file.
-            c_function_declaration (str): Declaration of the C function (e.g., "int32_t Check_HeadSerial(uint8_t bID, char HeadSerial[], int32_t CharSize)").
+            dll (ctypes.CDLL or str): the DLL object, or its file path.
+            c_function_declaration (str): Declaration of the C function (e.g.:
+            "int32_t Check_HeadSerial(uint8_t bID, char HeadSerial[], int32_t CharSize)").
     
         Returns:
-            function: A Python function that calls the specified C function from the DLL.
+            function: A Python function that calls the specified C function from the DLL. 
+            
+                Args: 
+                    the arguments specified in c_function_declaration. For array inputs ("type *name" 
+                    or "type name[]"), you can just pass a list containing the values. For "void *" 
+                    arguments, you can create them using the function 
+                    dllWrapper.voidPointerTo(<pointed value/array>, <C type of the value>)
+                    (or just change the c_function_declaration string to use a more specific type)
+                    
+                Returns:
+                    retObj: dictionary containing the return value (retObj['return']) and every 
+                    input argument (retValue[argumentName]). For pointers, the returned value is the
+                    value of the pointed address, which might have been changed by the C function
         """
         # Parse the C function declaration
         return_type, function_name, args, argNames = dllWrapper.parse_c_function_declaration(c_function_declaration)

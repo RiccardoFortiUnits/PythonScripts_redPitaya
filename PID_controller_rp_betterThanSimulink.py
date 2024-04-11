@@ -192,8 +192,10 @@ title.grid(row = 0, columnspan=8,padx=5,pady=5)
 elements = [\
     element("Kp", connection.pidSetProportional, 1, 0.1),\
     element("Ki", connection.pidSetIntegral, 2, 0.00),\
-    element("Kd", connection.pidSetDerivative, 3, 0.00),\
-    element("set point (V)", connection.pidSetSetPoint, 4, 0.0),\
+    # element("Kd", connection.pidSetDerivative, 3, 0.00),\
+    element("Kp1", connection.pidSetProportional2, 3, 0.1),\
+    element("Ki1", connection.pidSetIntegral2, 4, 0.1),\
+    # element("set point (V)", connection.pidSetSetPoint, 4, 0.0),\
     ]
 toggles = [\
     #toggle("delay", connection.pidSetDelay, 2,8,True,False, 300),\
@@ -202,13 +204,14 @@ toggles = [\
     toggle("filtro generico", connection.pidSetGenFilter, 4,8,True,False, "[0.01,0][1,0.99]"),\
     toggle("linearizer", connection.pidSetLinearizer, 5,8,True,False, "[-1,0.019283939731896,0.032590515583281,0.190926157824052,0.704166283061034,0.861064754066206,0.965351031553027,1][0,0,0.125017474264530,0.278875411577059,0.610845691806975,0.739630993553370,0.871737897932114,1]"),\
     toggle("DC offset", connection.asgSetOffset, 0,8, True, False,  0.5),\
+    toggle("common mode", connection.asgSetOffset, 6,8,False),\
     ]
 enumToggles = [\
     enumToggle("feedback", ["no feedback", "negative feedback", "positive feedback", "no feedback, negated output"], connection.pidSetFeedback, 1,8),\
-    enumToggle("safeSwitch", ["disabled", "stopAtSaturation", "resetAtSaturation"], connection.pidSetSafeSwitch, 6,8),\
+    enumToggle("safeSwitch", ["disabled", "stopAtSaturation", "resetAtSaturation"], connection.pidSetSafeSwitch, 7,8),\
     enumToggle(    "carica/invia FPGA", \
                    ["compila e invia", "carica FPGA"] if compile_n_sendFpga else ["carica FPGA", "compila e invia"], \
-                   change_compile_n_sendFpga, 7,8),\
+                   change_compile_n_sendFpga, 8,8),\
     ]
 setPidValues.grid(row = 5 ,column =1,padx=5,pady=5)
 canvas.grid(row = 5, column =0 ,padx=0,pady=0)
