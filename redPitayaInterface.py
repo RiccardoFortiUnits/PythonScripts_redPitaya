@@ -196,9 +196,13 @@ class ShellHandler:
         
     def pidSetProportional(self, value):
         self.pidSetValue(0x40300014, 2**12, value)   
+    def pidSetProportional2(self, value):
+        self.pidSetValue(0x40300024, 2**12, value)   
         
     def pidSetIntegral(self, value):
         self.pidSetValue(0x40300018, 2**18, value)   
+    def pidSetIntegral2(self, value):
+        self.pidSetValue(0x40300028, 2**18, value)   
         
     def pidSetDerivative(self, value):
         self.pidSetValue(0x4030001c, 2**10, value)  
@@ -207,7 +211,7 @@ class ShellHandler:
        self. pidSetValue(0x40300000, 1, 0xf)    
        
     def pidEnableIntegral(self):
-        self.pidSetValue(0x40300000, 1, 0xe)
+        self.pidSetValue(0x40300000, 1, 0xc)
     configValValue = 0
     def pidSetLpFilter(self, enable, coefficient = 0):
         ShellHandler.configValValue = ShellHandler.configValValue & ~(1 << 13) | (enable << 13)
@@ -226,6 +230,9 @@ class ShellHandler:
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
     def pidSetSafeSwitch(self, value):
         ShellHandler.configValValue = ShellHandler.configValValue & ~(0x3 << 16) | (value << 16)
+        self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
+    def pidSetCommonModeReject(self, enable):
+        ShellHandler.configValValue = ShellHandler.configValValue & ~(0x1 << 18) | (enable << 18)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
         
     def pidSetGenFilter(self, enable, coefficientString):
