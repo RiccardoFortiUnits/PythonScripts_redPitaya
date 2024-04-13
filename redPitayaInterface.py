@@ -86,6 +86,12 @@ class ShellHandler:
         self.__init__("rp-f0be3a.local", "root", "root", 'ecdsa-sha2-nistp256', key)
         self.execute("echo")
 
+    def modifiedConnection(self):
+        keyData = b"""AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBNuVuPL/I4v3dySt8Wzt6fx+cAYEKCwZOO873SR7x+QmlqxE3tyN9a+af66f1sAGWIBBNgTEqbmswXcUhkCgtJI="""
+        key = paramiko.ECDSAKey(data=decodebytes(keyData))
+        self.__init__("rp-f0be72.local", "root", "root", 'ecdsa-sha2-nistp256', key)
+        self.execute("echo")
+
     def execute(self, cmd, delayTime = 0.05):
         response = self.roughCommand(cmd,delayTime=delayTime)
         
@@ -254,7 +260,7 @@ class ShellHandler:
     def asgSetOffset(self, enable, value=0):
         if not enable:
             value = 0
-        self.pidSetValue(0x40200004, ((2**13)-1), value, 16)
+        self.pidSetValue(0x40200004, ((2**13)-1), value-1, 16)
     
     def pidSetLinearizer(self, enable, samplesString):
         maxSamples = 8

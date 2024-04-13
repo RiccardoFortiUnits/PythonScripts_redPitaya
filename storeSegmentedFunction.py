@@ -15,7 +15,8 @@ import time
 import numpy as np
 
 connection = ShellHandler()
-connection.standardConnection()
+# connection.standardConnection()
+connection.modifiedConnection()
 
 # connection.getLastModifiedFile("./root")
 

@@ -10,7 +10,7 @@ connection = ShellHandler()
 
 def connect():
     global connection
-    connection.standardConnection()
+    connection.modifiedConnection()
     setPidValues["state"] = "active"
     disablePid["state"] = "active"
     updateFpga["state"] = "active"
@@ -24,8 +24,7 @@ def disconnect():
     
 def sendToPID():
     # Pulisce il contenuto corrente della casella di testo
-    output_text.delete("1.0", tk.END)    
-    connection.asgSetOffset(0)
+    output_text.delete("1.0", tk.END)
     
     connection.pidDisableIntegral()
     for el in elements:
@@ -180,7 +179,7 @@ disablePid = tk.Button(finestra, text="Disabilita PID", command=stop_pid)
 #creazione dei gestori dell'update FPGA
 updateFpga = tk.Button(finestra, text="Aggiorna FPGA", command=loadNewFpga)
 newFpgaName_text = tk.Entry(finestra)
-newFpgaName_text.insert(0, "linearizer 11_03_2024 14_45.bit.bin")
+newFpgaName_text.insert(0, "linearizer 12_04_2024 15_27.bit.bin")
 
 # Creazione della casella di testo per l'output
 output_text = tk.Text(finestra, height=5, width=30)
@@ -193,8 +192,8 @@ elements = [\
     element("Kp", connection.pidSetProportional, 1, 0.1),\
     element("Ki", connection.pidSetIntegral, 2, 0.00),\
     # element("Kd", connection.pidSetDerivative, 3, 0.00),\
-    element("Kp1", connection.pidSetProportional2, 3, 0.1),\
-    element("Ki1", connection.pidSetIntegral2, 4, 0.1),\
+    element("Kp1", connection.pidSetProportional2, 3, 0),\
+    element("Ki1", connection.pidSetIntegral2, 4, 0),\
     # element("set point (V)", connection.pidSetSetPoint, 4, 0.0),\
     ]
 toggles = [\
@@ -203,8 +202,8 @@ toggles = [\
     toggle("filtro lowPass", connection.pidSetLpFilter, 3,8,True,False, 0.9),\
     toggle("filtro generico", connection.pidSetGenFilter, 4,8,True,False, "[0.01,0][1,0.99]"),\
     toggle("linearizer", connection.pidSetLinearizer, 5,8,True,False, "[-1,0.019283939731896,0.032590515583281,0.190926157824052,0.704166283061034,0.861064754066206,0.965351031553027,1][0,0,0.125017474264530,0.278875411577059,0.610845691806975,0.739630993553370,0.871737897932114,1]"),\
-    toggle("DC offset", connection.asgSetOffset, 0,8, True, False,  0.5),\
-    toggle("common mode", connection.asgSetOffset, 6,8,False),\
+    toggle("DC offset", connection.asgSetOffset, 0,8, True, False,  0.1),\
+    toggle("common mode", connection.pidSetCommonModeReject, 6,8,False),\
     ]
 enumToggles = [\
     enumToggle("feedback", ["no feedback", "negative feedback", "positive feedback", "no feedback, negated output"], connection.pidSetFeedback, 1,8),\

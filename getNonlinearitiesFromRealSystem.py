@@ -16,8 +16,10 @@ waitTime = 0.1
 nOfReadsPerPoint = 5 #average current value on multiple points
 
 
+print("connecting...")
 connection = ShellHandler()
-connection.standardConnection()
+connection.modifiedConnection()
+print("connected")
 
 connection.pidDisableIntegral()
 connection.pidSetProportional(proportional)
@@ -27,6 +29,7 @@ x = np.linspace(0, 1.8, nOfPoints)
 y = np.zeros(len(x))
 
 for i in range(len(x)):
+    print("testing setpoint " + str(x[i]) + "V")
     connection.pidSetPwmSetpoint(True, x[i])
     connection.pidEnableIntegral()
     time.sleep(waitTime)
@@ -36,6 +39,9 @@ for i in range(len(x)):
     y[i] = v / nOfReadsPerPoint / 2**13
     
     connection.pidDisableIntegral() 
+
+
+connection.pidSetPwmSetpoint(True, x[0])
 
 connection.close()
     
