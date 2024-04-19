@@ -41,6 +41,7 @@ for i in range(len(x)):
     connection.pidDisableIntegral() 
 
 
+connection.pidSetProportional(0)
 connection.pidSetPwmSetpoint(True, x[0])
 
 connection.close()

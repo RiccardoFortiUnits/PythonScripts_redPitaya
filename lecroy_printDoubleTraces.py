@@ -24,14 +24,32 @@ if "C3" in fileName:
 else:
     (data1, samplingFreq1, time1) = lecroyInterface.getDataFromBinaryFile(fileName.replace("C2", "C3"))
 
+ratioOfUsedSamples = None#1000
+if ratioOfUsedSamples is not None:
+    time /= ratioOfUsedSamples
+    time1 /= ratioOfUsedSamples
+    data = data[:len(data)//ratioOfUsedSamples]
+    data1 = data1[:len(data1)//ratioOfUsedSamples]
+    
+timeInterval = np.array([.00027,.000718])
+if timeInterval is not None:
+    idx = (timeInterval // (samplingFreq**-1)).astype(int)
+    data = data[idx[0]:idx[1]]
+    data1 = data1[idx[0]:idx[1]]
+    time = (timeInterval[1] - timeInterval[0])
+    time1 = (timeInterval[1] - timeInterval[0])
+    
 
-
-decimation = 50
+decimation = None
 if decimation is not None:
     data1 = scipy.signal.decimate(data1, decimation)
     data = scipy.signal.decimate(data, decimation)
 
-samplesToPlot = len(data)
+
+nonlinearDecimation = 10000
+if nonlinearDecimation is not None:
+    data1 = lecroyInterface.decimateAndReduceToMaxes(data1, samplingFreq1, samplingFreq1/nonlinearDecimation)
+    samplingFreq1 /= nonlinearDecimation
 
 # def smallCorrelation(x,y,nSamples):
 #     res = np.zeros(nSamples)
@@ -52,15 +70,17 @@ samplesToPlot = len(data)
 
 fig, ax1 = plt.subplots()
 
+samplesToPlot = len(data)
 # Plot the first graph on the primary y-axis
-ax1.plot(np.linspace(0,time*samplesToPlot/len(data),samplesToPlot), -data[0:samplesToPlot], color='tab:blue', label='Risposta')
+ax1.plot(np.linspace(0,time*samplesToPlot/samplesToPlot,samplesToPlot), -data[0:samplesToPlot], color='tab:blue', label='Risposta')
 ax1.set_xlabel('t')
 ax1.set_ylabel('V_aom')
 ax1.tick_params('y', colors='tab:blue')
 
+samplesToPlot = len(data1)
 # Create a secondary y-axis
 ax2 = ax1.twinx()
-ax2.plot(np.linspace(0,time*samplesToPlot/len(data),samplesToPlot), data1[0:samplesToPlot], color='tab:red', label='Ingresso')
+ax2.plot(np.linspace(0,time*samplesToPlot/samplesToPlot,samplesToPlot), data1[0:samplesToPlot], color='tab:red', label='Ingresso')
 ax2.set_ylabel('V_step')
 ax2.tick_params('y', colors='tab:red')
 

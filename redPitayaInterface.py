@@ -60,7 +60,15 @@ def getAcquisition(repeats = 1):
     
     return (array, samplingFreq, time)
 
-
+def find_line_starting_with_string(file_path, target_string):
+    try:
+        with open(file_path, 'r') as file:
+            for line in file:
+                if line.startswith(target_string):
+                    return line.strip()  # Return the line without leading/trailing spaces
+        return f"No line starting with '{target_string}' found in the file."
+    except FileNotFoundError:
+        return f"File '{file_path}' not found."
 
 class ShellHandler:
 
@@ -79,18 +87,20 @@ class ShellHandler:
 
     def close(self):
         self.ssh.close()
-
-    def standardConnection(self):
-        keyData = b"""AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBOiejaPKiyP0XO9eK1ZxKts9fTyxJU8N+Grf2H8KTZvohiZ9ZHFi5ISqqgU5KwR1ir3apkoUTj4r+x3/bjpQgQA="""
-        key = paramiko.ECDSAKey(data=decodebytes(keyData))
-        self.__init__("rp-f0be3a.local", "root", "root", 'ecdsa-sha2-nistp256', key)
+    known_hosts_file = "C:/Users/lastline/.ssh/known_hosts"
+    def connect(self, ssh_siteAddress = "rp-xxxxxx.local"):
+        #example of ssh_siteAddress: 
+        keyData = find_line_starting_with_string(ShellHandler.known_hosts_file, ssh_siteAddress).split(" ")[2]
+        # keyData = b"""AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHTehAYPnnZWXRlnhr/4rgY/jiDpbEvyUv2JVCgHapqWm6N8mDwOV6XJxQr3gPRhGYBNi/rwfi/bkMGfIG/hpeI="""
+        key = paramiko.ECDSAKey(data=decodebytes(bytes(keyData, "utf-8")))
+        self.__init__(ssh_siteAddress, "root", "root", 'ecdsa-sha2-nistp256', key)
         self.execute("echo")
+        
+    def standardConnection(self):
+        self.connect("rp-f0be3a.local")        
 
     def modifiedConnection(self):
-        keyData = b"""AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBNuVuPL/I4v3dySt8Wzt6fx+cAYEKCwZOO873SR7x+QmlqxE3tyN9a+af66f1sAGWIBBNgTEqbmswXcUhkCgtJI="""
-        key = paramiko.ECDSAKey(data=decodebytes(keyData))
-        self.__init__("rp-f0be72.local", "root", "root", 'ecdsa-sha2-nistp256', key)
-        self.execute("echo")
+        self.connect("rp-f0be72.local")
 
     def execute(self, cmd, delayTime = 0.05):
         response = self.roughCommand(cmd,delayTime=delayTime)

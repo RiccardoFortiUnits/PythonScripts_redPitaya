@@ -15,7 +15,9 @@ def getDataFromBinaryFile(path):
     return (data, samplingFreq, time)
 
 def decimateAndReduceToMaxes(y, sampleFreq, finalSampleFreq):
-    #if the signal is a modulated sinusoidal, make sure that the final sample frequency is lower than the signal frequency
+    #if the signal is a modulated sinusoidal, make sure that the final sample frequency is lower 
+    #than the signal frequency (so that the decimated signal takes at least one 
+    #period of the original signal for each sample)
     decimation = int(np.ceil(sampleFreq / finalSampleFreq))
     out = np.zeros(int(len(y) * finalSampleFreq / sampleFreq))
     y=np.abs(y)
