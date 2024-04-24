@@ -21,6 +21,9 @@ import os
 import tkinter
 from tkinter import filedialog
 
+method = 'divide'# 'subtract'
+
+
 def getFromFile(path):
     extension = os.path.splitext(path)[-1]
     name = os.path.basename(path)
@@ -62,10 +65,14 @@ else:
     else:    
         for path in folder_path:
             x,y = getFromFile(path)
-            
-            y = y / y0
+            if method == 'divide':
+                y = y / y0
+            elif method == 'subtract':    
+                y =np.sqrt(abs(y**2 - y0**2))
+                    
             
             X.append(x)
             Y.append(y)
             
-        sa.plotNSD(X,Y, paths = ["0dB"] + list(folder_path) )# , linearY=True )# , linearY=True)
+        if method == 'divide':
+            sa.plotNSD(X,Y, paths = ["0dB"] + list(folder_path) )# , linearY=True )# , linearY=True)

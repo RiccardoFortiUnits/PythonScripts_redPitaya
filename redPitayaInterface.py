@@ -294,6 +294,31 @@ class ShellHandler:
         ShellHandler.configValValue = ShellHandler.configValValue & ~(0x1 << 15) | (enable << 15)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
             
+    def pidSetRamp(self, enable, samplesString):
+        numbers, _ = extract_numbers_and_count(samplesString)
+        x = np.array(numbers)
+        if(len(x)  != 3):
+            raise Exception("incorrect number of samples!")
+            
+        startValue = int(x[0]*255/1.8)
+        endValue = x[1]*255/1.8
+        rampTime = x[2]/8e-9
+        valueIncrementer = 1 if startValue < endValue else -1#let's always use the smallest incrementer possible, to have the highest resolution
+            
+        nOfSteps = valueIncrementer * (endValue - startValue)
+        stepTime = int(rampTime / nOfSteps)
+        if not enable:
+            self.setBitString(0x40400020, 0x0, 0, 2)
+                    
+        self.setBitString(0x40400040, startValue	    , 0, 8)		#PWM0_ramp_startValue
+        self.setBitString(0x40400040, valueIncrementer  , 8, 8)		#PWM0_ramp_valueIncrementer
+        self.setBitString(0x40400050, stepTime	        , 0, 24)	#PWM0_ramp_stepTime
+        self.setBitString(0x40400050, nOfSteps			, 24, 8)	#PWM0_ramp_nOfSteps
+        
+        if enable:
+            self.setBitString(0x40400020, 0x1, 0, 2)
+            self.setBitString(0x40400060, 0x1, 0, 2)
+            
 
 def segmentedCoefficient(x,y):
     a = x[0:len(x)-1]
@@ -312,20 +337,18 @@ def extract_numbers_and_count(input_string):
     # Use regular expression to find sets of numbers in brackets
     matches = re.findall(r'\[([0-9eE., -]+)\]', input_string)
 
-    if len(matches) < 2:
-        return None  # Less than two sets found
-
     # Extract numbers from the first set of brackets
-    first_set_numbers = [float(num) for num in re.split(r'[,\s]+', matches[0]) if num.strip()]
+    totalList = [float(num) for num in re.split(r'[,\s]+', matches[0]) if num.strip()]
+    firstLength = len(totalList)
+    for i in range(1,len(matches)):
+        set_numbers = [float(num) for num in re.split(r'[,\s]+', matches[i]) if num.strip()]
+        totalList += set_numbers
 
-    # Extract numbers from the second set of brackets
-    second_set_numbers = [float(num) for num in re.split(r'[,\s]+', matches[1]) if num.strip()]
-
-    return first_set_numbers + second_set_numbers, len(first_set_numbers) 
+    return totalList, firstLength
  
  
 def convertToGenericFilterCoefficients(numbers, denNumSplit):
-    #y[n] = sum(ai*y(n-i])) + sum(bj*x[n-j]])
+    #y[n] = sum(ai*y[n-i])) + sum(bj*x[n-j]])
     #the generic filter cannot use y[n-1] (not fast to do it in one cycle), but we can still do everything:
     #y[n-1] = sum(ai*y(n-i-1])) + sum(bj*x[n-j-1]]) =>
     #y[n] = sum_{i!=1}(ai*y(n-i])) + sum(bj*x[n-j]]) + a1*(sum(ai*y(n-i-1])) + sum(bj*x[n-j-1]]))
@@ -334,8 +357,13 @@ def convertToGenericFilterCoefficients(numbers, denNumSplit):
     b = numbers[:denNumSplit]
     
     a = numbers[denNumSplit:] #"a0" should always be 1
-    a1 = a[1]
-    newA = np.array(a[2:] + [0]) + a1 * np.array(a[1:])
-    newB = np.array(b + [0]) + np.array([0] + list(a1 * np.array(b)))
+    if len(a) >= 2:
+        a1 = a[1]
+        newA = np.array(a[2:] + [0]) + a1 * np.array(a[1:])
+        newB = np.array(b + [0]) + np.array([0] + list(a1 * np.array(b)))
+    else:
+        # a1 = 0;
+        newA = np.array([0])
+        newB = np.array(b + [0])
     
     return list(newB) + list(newA), len(newB)
