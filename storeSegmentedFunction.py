@@ -48,8 +48,8 @@ x = np.array([-1,0.019283939731896,0.032590515583281,0.190926157824052,0.7041662
 time.sleep(1)
 for i in range(len(q)):
     if currentLinearizer == 'ADC':
-        connection.setBitString(fpgaAddress + i*8, x[i]*(2**13), 0, 14)
-        connection.setBitString(fpgaAddress + i*8, q[i]*(2**13), 14, 14)
+        connection.setBitString(fpgaAddress + i*8, x[i]*(2**13), 0, 15)
+        connection.setBitString(fpgaAddress + i*8, q[i]*(2**13), 15, 15)
         connection.setBitString(fpgaAddress + i*8+4, m[i]*(2**24-1), 0, 32)
         
     elif currentLinearizer == 'PWM':

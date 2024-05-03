@@ -9,7 +9,7 @@ fileName_withExtension =  os.path.basename(filePath)
 fileName =  os.path.splitext(fileName_withExtension)[0]
 
 connection = ShellHandler()
-connection.standardConnection()
+connection.modifiedConnection()
 
 connection.copyFile(filePath, "C/"+fileName_withExtension)
 

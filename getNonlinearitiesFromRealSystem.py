@@ -35,7 +35,7 @@ for i in range(len(x)):
     time.sleep(waitTime)
     v = 0
     for _ in range(nOfReadsPerPoint):
-        v = v + connection.getBitString(0x40300050, 0, 14, True)
+        v = v + connection.getBitString(0x40300050, 0, 15, True)
     y[i] = v / nOfReadsPerPoint / 2**13
     
     connection.pidDisableIntegral() 

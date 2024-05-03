@@ -287,8 +287,8 @@ class ShellHandler:
         m = np.append(m,[0] * (maxSamples - len(m)))
         
         for i in range(maxSamples):
-            self.setBitString(0x403000A0 + i*8, s[i]*(2**13-1), 0, 14)
-            self.setBitString(0x403000A0 + i*8, q[i]*(2**13-1), 14, 14)
+            self.setBitString(0x403000A0 + i*8, s[i]*(2**13-1), 0, 15)
+            self.setBitString(0x403000A0 + i*8, q[i]*(2**13-1), 15, 15)
             self.setBitString(0x403000A4 + i*8, m[i]*(2**24-1), 0, 32)
             
         ShellHandler.configValValue = ShellHandler.configValValue & ~(0x1 << 15) | (enable << 15)
