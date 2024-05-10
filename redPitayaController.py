@@ -32,11 +32,9 @@ def setOnGrid(elements, row, column):
         elements[i].grid(row = row, column = column + i, padx = 5, pady = 5)
 
 def transformToList(Object):
-    try:
-        len(Object)
+    if isinstance(Object,list):
         return Object
-    except:
-        return [Object]
+    return [Object]
 
 def readNumber(string):
     try:

@@ -271,6 +271,10 @@ class ShellHandler:
         if not enable:
             value = 0
         self.pidSetValue(0x40200004, ((2**13)-1), value-1, 16)
+    def asgSetOffset2(self, enable, value=0):
+        if not enable:
+            value = 0
+        self.pidSetValue(0x40200024, ((2**13)-1), value-1, 16)
     
     def pidSetLinearizer(self, enable, samplesString):
         maxSamples = 8

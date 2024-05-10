@@ -25,8 +25,8 @@ def dBm_to_V_sqrtHz(y, inputImpedance_Ohm = 50, outputImpedance_Ohm = 50):
 #V: tension erogated by the source (on the load outputImpedance + inputImpedance)
 #dBm: power read on the load inputImpedance
 def V_sqrtHz_to_dBm(y, inputImpedance_Ohm = 50, outputImpedance_Ohm = 50):
-    y *= inputImpedance_Ohm / (outputImpedance_Ohm + inputImpedance_Ohm)
-    return 10 * np.log10(y ** 2 / inputImpedance_Ohm)
+    yy = y * inputImpedance_Ohm / (outputImpedance_Ohm + inputImpedance_Ohm)
+    return 10 * np.log10(yy ** 2 / inputImpedance_Ohm / 1e-3)
 
 def Volt_to_Ampere(y, Gain_Ohm):
     return y / Gain_Ohm
