@@ -75,4 +75,4 @@ else:
             Y.append(y)
             
         if method == 'divide':
-            sa.plotNSD(X,Y, paths = ["0dB"] + list(folder_path) )# , linearY=True )# , linearY=True)
+            sa.plotNSD(X,Y, paths = ["0dB"] + list(folder_path), axisDimensions="dB" )# , linearY=True )# , linearY=True)
