@@ -35,8 +35,10 @@ else:
         if extension == '.mcsv':#csv obtained from Matlab
             x, y = getSpectrumAnalysis_matlabNoise(path)    
         if extension == '.trc':
-            (data, samplingFreq, time) = lecroyInterface.getDataFromBinaryFile(path)
-            x,y=sa.getNSD(data, samplingFreq)
+            x, y = sa.getSpectrumAnalysis_lecroy(path)
+            # (data, samplingFreq, time) = lecroyInterface.getDataFromBinaryFile(path)
+            # x,y=np.linspace(0,time, len(data)),data
+            #sa.getNSD(data, samplingFreq)
         if extension == '.log':
             x, y = lecroyInterface.getDataFromMultimeterLogFile(path)   
             x,y = sa.getNSD(y, 1/(x[1]-x[0]))

@@ -20,6 +20,8 @@ import os
 import tkinter
 from tkinter import filedialog
 import lecroyInterface
+import lecroyparser
+import bisect
 
 #dBm: measure of power read by the spectrum analyzer (on a certain input impedance)
     #V/√Hz: measure of rpm tension emitted by the source (on the sum of its output impedance 
@@ -92,6 +94,20 @@ def getSpectrumAnalysis_signalHound(file_csv, isDataIndB = True, outputImpedance
     else:
         return x, y
 
+def getSpectrumAnalysis_lecroy(path, isDataIndB = True, outputImpedance_Ohm = 50, inputInpedance = 50):
+    acquisitionInfo = lecroyparser.ScopeData(path)
+    x,y = acquisitionInfo.x,acquisitionInfo.y
+    if(x[0] <= 0):
+        x += x[1] - 2 * x[0]
+    binBand = 1 / (x[1] - x[0])
+    
+    if isDataIndB:
+        #multiply by the bin bandwidth, so that the output is normalized in frequency
+        return x, \
+            dBm_to_V_sqrtHz(y, outputImpedance_Ohm = outputImpedance_Ohm, inputImpedance_Ohm = inputInpedance)\
+                                            * np.sqrt(binBand)
+    else:
+        return x, y
       
 def getSpectrumAnalysis_matlabNoise(file_csv):
     data = pd.read_csv(file_csv, low_memory=False, header= None)
@@ -236,8 +252,8 @@ def extractNumberFromFileName(fileName, stringsToFind):
             if setpoint_number:
                 return float(setpoint_number), stringToFind  # Convert to a float if needed
             else:
-                return None, stringToFind
-    return None, None
+                return -1, stringToFind
+    return -1, "None"
 
 def decimateByAveraging(V, q):
     # Reshape V into a 2D matrix with q columns
@@ -249,6 +265,10 @@ def decimateByAveraging(V, q):
     # Calculate the mean along each column   
     return np.mean(matrix, axis=1)
 
+
+def first_index(val, arr):
+    index = bisect.bisect_right(arr, val)
+    return index if index < len(arr) else -1
 
 class measure:
     defaultInitVals = {
@@ -269,25 +289,29 @@ class measure:
                                 #anyway, with this, I can add and remove this multiplier more easily
     
     rho_shotNoise = 1.26577e-9# √(2*e*photodiodeResponsivity)
-    photodiodeResponsivity = 0.2
-    maxSetpoint = 1.8
+    photodiodeResponsivity = 0.2# A/W
+    maxSetpoint = 1.8# V
+    stage1Saturation = 3.5# V
     
     def setGainsFromTiaVersion(self):
-        nameList = measure.dataInsideFileName["tiaVersion"]
-        index = nameList.index(self.tiaVersion)
-        if index <= nameList.index("AT4_39k"):
-            g1 = 25500
-            g2 = 49000 / 2700
-            maxPower = 750e-6
-        elif index <= nameList.index("AT4_16k"):
-            g1 = 25500
-            g2 = 15800 / 2700
-            maxPower = 750e-6
-        elif index <= nameList.index("AT4_160k"):
-            g1 = 25500
-            g2 = 162000 / 2700
-            maxPower = 750e-6
-        self.g1, self.g2, self.maxPower = g1, g2, maxPower
+        try:
+            nameList = measure.dataInsideFileName["tiaVersion"]
+            index = nameList.index(self.tiaVersion)
+            if index <= nameList.index("AT4_39k"):
+                g1 = 25500
+                g2 = 49000 / 2700
+                maxPower = 750e-6
+            elif index <= nameList.index("AT4_16k"):
+                g1 = 25500
+                g2 = 15800 / 2700
+                maxPower = 750e-6
+            elif index <= nameList.index("AT4_160k"):
+                g1 = 25500
+                g2 = 162000 / 2700
+                maxPower = 750e-6
+            self.g1, self.g2, self.maxPower = g1, g2, maxPower
+        except:
+            pass
         
     def setLaserPower(self):
         if self.laserPower_type == "setpoint":
@@ -373,10 +397,41 @@ class measure:
         self.g1 *= self.laserPower / newLaserPower
         self.laserPower = newLaserPower
     
+    
+    def reduceFrequencyRange(self, newStartFrequency = None, newEndFrequency = None):
+        if newEndFrequency is None:
+            newEndFrequency = self.__freq[-1]
+        if newStartFrequency is None:
+            newStartFrequency = self.__freq[0]
+        startIdx = first_index(newStartFrequency, self.__freq)
+        endIdx = first_index(newEndFrequency, self.__freq)            
+        
+        if endIdx - startIdx < 1:
+            if startIdx > 0:    
+                prevVal = self.__tensionV_sqrtHz[startIdx-1] + \
+                    (newStartFrequency-self.__freq[startIdx-1]) / (self.__freq[startIdx]-self.__freq[startIdx-1]) * \
+                    (self.__tensionV_sqrtHz[startIdx] - self.__tensionV_sqrtHz[startIdx-1])
+            else:
+                prevVal = self.__tensionV_sqrtHz[startIdx]
+                
+            if endIdx < len(self.__freq) - 1:    
+                nextVal = self.__tensionV_sqrtHz[startIdx+1] + \
+                    (newEndFrequency-self.__freq[startIdx+1]) / (self.__freq[startIdx]-self.__freq[startIdx+1]) * \
+                    (self.__tensionV_sqrtHz[startIdx] - self.__tensionV_sqrtHz[startIdx+1])
+            else:
+                nextVal = self.__tensionV_sqrtHz[endIdx]
+                
+        self.__freq = self.__freq[startIdx:endIdx]
+        self.__tensionV_sqrtHz = self.__tensionV_sqrtHz[startIdx:endIdx]
+        
+        if endIdx - startIdx < 1:
+            self.__freq = np.array([newStartFrequency] + list(self.__freq) + [newEndFrequency])
+            self.__tensionV_sqrtHz = np.array([prevVal] + list(self.__tensionV_sqrtHz) + [nextVal])
+    
     def decimateLinearly(self, decimationRatio):
         self.__tensionV_sqrtHz = decimateByAveraging(self.__tensionV_sqrtHz, decimationRatio)
         self.__freq = decimateByAveraging(self.__freq, decimationRatio)
-    
+        
     def decimateLogarithmically(self, q):
         #this function will decimate the data on a logarithmic scale, meaning that at higher __freq, where there are more samples, the decimation will be greater
         
@@ -486,6 +541,10 @@ class measure:
 
 # experimentPower = a.laserPower*10
 # c = measure.experimentLaserNoiseMeasure(a,b,experimentPower)
+# H = b.tiaTensionV_sqrtHz() / a.tiaTensionV_sqrtHz()
+# plotNSD(a.frequencies(), 10*np.log10(H), linearY = True, axisDimensions="|1-H(f)|")
+
+# measure.plotList([a,b])
 
 # l = [a,b,c]
 # measure.plotList(l,"dB",[("frequencies", "laserPowerRIN_dBc_Hz"), "shotNoiseForPlotsRIN_dBc_Hz"])
