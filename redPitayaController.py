@@ -14,7 +14,7 @@ connected = False
 elementListFile = "redPitayaController.cfg"
 def connect():
     global connection, connected
-    connection.standardConnection()
+    connection.modifiedConnection()
     connected = True
 
 def disconnect():
@@ -172,9 +172,11 @@ class divider(canvasElement):
         self.UI_elements = [line]
         
 
-def getElementList(fileName, row, column):    
+def getElementList(fileName, row, column): 
+    firstRow = row
     with open(fileName, 'r') as file:
         elements = []
+        maxCol = column
         for line in file:
             # Remove leading and trailing whitespaces
             line = line.strip()
@@ -188,11 +190,15 @@ def getElementList(fileName, row, column):
                     for o in obj:
                         o.place(row, c)
                         c = c + len(o.UI_elements)
+                    maxCol = max(maxCol,c)
                 else:
                     obj.place(row, column)
                     
                     
                 row = row + 1
+                if(row > 30):
+                    column = maxCol + 5#let's add a few more columns, just in case
+                    row = firstRow
     
                 # Append the created object to the list
                 elements.append(obj)    

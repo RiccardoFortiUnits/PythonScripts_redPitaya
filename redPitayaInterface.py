@@ -298,11 +298,32 @@ class ShellHandler:
         ShellHandler.configValValue = ShellHandler.configValValue & ~(0x1 << 15) | (enable << 15)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
             
-    def pidSetRamp(self, enable, samplesString):
+    def pidSetPWMLinearizer(self, enable, samplesString):
+        maxSamples = 8
+        numbers, denNumSplit = extract_numbers_and_count(samplesString)
+        x = np.array(numbers[0:denNumSplit])
+        y = np.array(numbers[denNumSplit:])
+        if(len(x) > maxSamples+1 or len(y) != len(x)):
+            raise Exception("incorrect number of samples!")
+        
+        (s,q,m) = segmentedCoefficient(x,y)
+        
+        s = np.append(s,[0] * (maxSamples - len(m)))
+        q = np.append(q,[0] * (maxSamples - len(m)))
+        m = np.append(m,[0] * (maxSamples - len(m)))
+        
+        for i in range(maxSamples):
+            self.setBitString(0x40400080 + i*4, s[i]*255, 0, 8)
+            self.setBitString(0x40400080 + i*4, q[i]*255, 8, 8)
+            self.setBitString(0x40400080 + i*4, m[i]*255, 16, 16)
+            
+        self.setBitString(0x40400020, enable, 3, 1)
+            
+    def pidSetPWMRamp(self, enable, samplesString):
         numbers, _ = extract_numbers_and_count(samplesString)
         x = np.array(numbers)
-        if(len(x)  != 3):
-            raise Exception("incorrect number of samples!")
+        if(len(x)  != 4):
+            raise Exception("incorrect number of variables! expected format [startValue, endValue, rampTime, triggerPin]")
             
         startValue = int(x[0]*255/1.8)
         endValue = x[1]*255/1.8
@@ -320,8 +341,10 @@ class ShellHandler:
         self.setBitString(0x40400050, nOfSteps			, 24, 8)	#PWM0_ramp_nOfSteps
         
         if enable:
-            self.setBitString(0x40400020, 0x1, 0, 2)
-            self.setBitString(0x40400060, 0x1, 0, 2)
+            self.setBitString(0x40400020, x[3], 4, 4)
+            self.setBitString(0x40400060, 0x3, 0, 2)
+            self.setBitString(0x40400020, enable, 0, 2)
+            
             
 
 def segmentedCoefficient(x,y):

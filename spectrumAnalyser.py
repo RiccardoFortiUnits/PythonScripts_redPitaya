@@ -356,11 +356,13 @@ class measure:
     
     def shotNoisePower_W_sqrtHz(self):
         return measure.rho_shotNoise * np.sqrt(self.laserPower)
+    def shotNoisePower_RIN_dBc_Hz(self):
+        return laserW_sqrtHz_to_RIN_dBc_Hz(self.shotNoisePower_W_sqrtHz(), self.laserPower)
     
     def shotNoiseForPlots_W_sqrtHz(self):
         return [self.__freq[0],self.__freq[-1]], [self.shotNoisePower_W_sqrtHz()] * 2
     def shotNoiseForPlotsRIN_dBc_Hz(self):
-        return [self.__freq[0],self.__freq[-1]], [laserW_sqrtHz_to_RIN_dBc_Hz(self.shotNoisePower_W_sqrtHz(), self.laserPower)] * 2
+        return [self.__freq[0],self.__freq[-1]], [self.shotNoisePower_RIN_dBc_Hz()] * 2
     def shotNoiseMeasure(self):
         sn = copy.deepcopy(self)
         sn.__freq = np.array([self.__freq[0],self.__freq[-1]])

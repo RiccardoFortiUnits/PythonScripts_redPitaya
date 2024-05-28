@@ -36,7 +36,7 @@ def togglePID():
     global B_setPidValues
     if not isPIDenabled:
         connection.pidDisableIntegral()
-        for el in elements:
+        for key, el in elements.items():
             el.callFunction(connection)
         connection.pidEnableIntegral()
         B_setPidValues.config(text="Disable PID")
@@ -169,7 +169,7 @@ B_setPidValues = tk.Button(finestra, text="Enable PID", command=togglePID)
 #creazione dei gestori dell'update FPGA
 B_updateFpga = tk.Button(finestra, text="Aggiorna FPGA", command=loadNewFpga)
 T_FpgaName = tk.Entry(finestra)
-T_FpgaName.insert(0, "linearizer_2V 03_05_2024 14_06.bit.bin")
+T_FpgaName.insert(0, "digPinRamp 23_05_2024 11_27.bit.bin")
 
 def elListToDictionary(elList):
     d = {}
@@ -186,13 +186,13 @@ elements = elListToDictionary([\
 toggles = elListToDictionary([\
     toggle("PWM delay", lambda x,y,z: print("not implemented yet"),True,False, 20),\
     toggle("PWM offset", connection.pidSetPwmSetpoint,True,False, 0),\
-    toggle("PWM ramp", connection.pidSetRamp,True,False, "[0,1.8,4e-3]"),\
-    toggle("DAC1 ramp", lambda x,y,z: print("not implemented yet"),True,False, "[0,1.8,4e-3]"),\
+    toggle("PWM ramp", connection.pidSetPWMRamp,True,False, "[0,1.8,4e-3,0]"),\
+    toggle("PWM linearizer", connection.pidSetPWMLinearizer, True,False, "[0,0.15,0.75,1][0,1,1,0]"),\
+    # toggle("DAC1 ramp", lambda x,y,z: print("not implemented yet"),True,False, "[0,1.8,4e-3]"),\
     toggle("ADC0 filter", connection.pidSetGenFilter,True,False, "[0.01,0][1,0.99]"),\
-    toggle("PWM filter", connection.pidSetGenFilter,True,False, "[0.01,0][1,0.99]"),\
     toggle("DAC0 linearizer", connection.pidSetLinearizer, True,False, "[-1,0.019283939731896,0.032590515583281,0.190926157824052,0.704166283061034,0.861064754066206,0.965351031553027,1][0,0,0.125017474264530,0.278875411577059,0.610845691806975,0.739630993553370,0.871737897932114,1]"),\
     toggle("DAC0 offset", connection.asgSetOffset, True, False,  1),\
-    toggle("DAC1 offset", connection.asgSetOffset2, True, False,  1),\
+    # toggle("DAC1 offset", connection.asgSetOffset2, True, False,  1),\
     toggle("common mode", connection.pidSetCommonModeReject,False),\
     ])
 enumToggles = elListToDictionary([\
@@ -217,12 +217,12 @@ def placeInGrid(totalGrid):
    
 totalGrid = \
 [
-	[elements["Kp"],		toggles["DAC0 offset"],				toggles["DAC0 linearizer"]		],
-	[elements["Ki"],		toggles["DAC1 offset"],				toggles["ADC0 filter"]			],
-	[elements["Kd"],		toggles["PWM offset"],				toggles["PWM filter"]			],
-	[elements["setpoint"],	toggles["DAC1 ramp"],				toggles["PWM delay"]			],
-	[B_setPidValues,		toggles["PWM ramp"],				enumToggles["feedback"]			],
-	[B_updateFpga,			enumToggles["load/send FPGA"],	   T_FpgaName						],
+    [elements["Kp"],        toggles["DAC0 offset"],         toggles["PWM offset"]        ],
+    [elements["Ki"],        toggles["DAC0 linearizer"],     toggles["PWM linearizer"]    ],
+    [elements["Kd"],        toggles["ADC0 filter"],         toggles["PWM ramp"]          ],
+    [elements["setpoint"],  None,                           None                         ],
+    [B_setPidValues,        None,                           None                         ],
+    [B_updateFpga,          T_FpgaName,                     enumToggles["load/send FPGA"]],
     [indicatore],
 ]
 placeInGrid(totalGrid)
@@ -240,4 +240,5 @@ B_updateFpga["state"] = "disable"
 finestra.protocol("WM_DELETE_WINDOW", disconnect)
 print("connecting...")
 connect()
+print("connected...")
 finestra.mainloop()
