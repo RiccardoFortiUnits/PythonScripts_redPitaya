@@ -15,6 +15,7 @@ import numpy as np
 import redpitaya_scpi as scpi
 import time
 from datetime import datetime, timedelta
+import pathlib
 
 #ask the device to read 16K samples. The function also returns the sample frequency and overall time
 def getAcquisition(repeats = 1):  
@@ -60,15 +61,19 @@ def getAcquisition(repeats = 1):
     
     return (array, samplingFreq, time)
 
-def find_line_starting_with_string(file_path, target_string):
+def find_line_starting_with_string(file_path, target_string, alsoContaining = ""):
     try:
         with open(file_path, 'r') as file:
             for line in file:
-                if line.startswith(target_string):
+                if line.startswith(target_string) and alsoContaining in line:
+                    
                     return line.strip()  # Return the line without leading/trailing spaces
-        return f"No line starting with '{target_string}' found in the file."
-    except FileNotFoundError:
-        return f"File '{file_path}' not found."
+        print(f"No line starting with '{target_string}' found in the file.")
+        raise Exception("connection not found. Try connecting in ssh from terminal first")
+    except FileNotFoundError as e:
+        print(f"File '{file_path}' not found.")
+        raise e
+        
 
 class ShellHandler:
 
@@ -87,10 +92,12 @@ class ShellHandler:
 
     def close(self):
         self.ssh.close()
-    known_hosts_file = "C:/Users/lastline/.ssh/known_hosts"
+    # known_hosts_file = "C:/Users/lastline/.ssh/known_hosts"
+    known_hosts_file = str(pathlib.Path.home() / ".ssh/known_hosts")
     def connect(self, ssh_siteAddress = "rp-xxxxxx.local"):
         #example of ssh_siteAddress: 
-        keyData = find_line_starting_with_string(ShellHandler.known_hosts_file, ssh_siteAddress).split(" ")[2]
+        keyData = find_line_starting_with_string(ShellHandler.known_hosts_file, 
+                            ssh_siteAddress, "ecdsa-sha2-nistp256").split(" ")[2]
         # keyData = b"""AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHTehAYPnnZWXRlnhr/4rgY/jiDpbEvyUv2JVCgHapqWm6N8mDwOV6XJxQr3gPRhGYBNi/rwfi/bkMGfIG/hpeI="""
         key = paramiko.ECDSAKey(data=decodebytes(bytes(keyData, "utf-8")))
         self.__init__(ssh_siteAddress, "root", "root", 'ecdsa-sha2-nistp256', key)
