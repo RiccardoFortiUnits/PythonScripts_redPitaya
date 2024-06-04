@@ -12,7 +12,10 @@ from base64 import decodebytes
 import matplotlib.pyplot as plt
 plt.rcParams['agg.path.chunksize'] = 10000
 import numpy as np
-import redpitaya_scpi as scpi
+try:
+    import user_devices.red_pitaya_PID.redPitayaPID_interface.redpitaya_scpi as scpi
+except:
+    import redpitaya_scpi as scpi
 import time
 from datetime import datetime, timedelta
 import pathlib
@@ -223,9 +226,9 @@ class ShellHandler:
         self.pidSetValue(0x40300024, 2**12, value)   
         
     def pidSetIntegral(self, value):
-        self.pidSetValue(0x40300018, 2**18, value)   
+        self.pidSetValue(0x40300018, 2**24, value)   
     def pidSetIntegral2(self, value):
-        self.pidSetValue(0x40300028, 2**18, value)   
+        self.pidSetValue(0x40300028, 2**24, value)   
         
     def pidSetDerivative(self, value):
         self.pidSetValue(0x4030001c, 2**10, value)  
@@ -352,9 +355,53 @@ class ShellHandler:
             self.setBitString(0x40400060, 0x3, 0, 2)
             self.setBitString(0x40400020, enable, 0, 2)
             
+    
+    def pidSetPWMRamp0(self, enable, samplesString):
+        maxSamples = 8
+        numbers, denNumSplit = extract_numbers_and_count(samplesString)
+        edges = np.array(numbers[0:denNumSplit])
+        times = np.array(numbers[denNumSplit:-1])
+        digitalPinTrigger = numbers[-1]
+        if(len(times) > maxSamples):
+            raise Exception("too many samples!")
+            
+        if not enable:
+            self.setBitString(0x40400020, 0x0, 0, 2)
+            
+        for i in range(len(times)):
+            startValue = edges[i]*255/1.8
+            endValue = edges[i+1]*255/1.8
+            rampTime = times[i]/8e-9
+            if startValue == endValue:
+                valueIncrementer = 0
+                maxStepTime = 0.10 #should be (2^24 * 8e-9) = 0.134 s, but let's use a just sligthly lower one
+                nOfSteps = np.ceil(times[i] / maxStepTime)#if times[i] < maxStepTime, we'll just use a single long step
+            else:
+                valueIncrementer = 1 if startValue < endValue else -1#let's always use the smallest incrementer possible, to have the highest resolution
+                nOfSteps = valueIncrementer * (endValue - startValue)
+                
+            stepTime = int(rampTime / nOfSteps)
+            self.setBitString(0x40400070+i*8, startValue	    , 0, 8)		#PWM0_ramp_startValue
+            self.setBitString(0x40400070+i*8, valueIncrementer  , 8, 8)		#PWM0_ramp_valueIncrementer
+            self.setBitString(0x40400074+i*8, stepTime	        , 0, 24)	#PWM0_ramp_stepTime
+            self.setBitString(0x40400074+i*8, nOfSteps			, 24, 8)	#PWM0_ramp_nOfSteps
+                    
+        if enable:
+            self.setBitString(0x40400060, 0x3, 0, 2)                        #PWM0 trigger = digital pin
+            self.setBitString(0x40400060, 0x2, 2, 2)                        #PWM0 valueWhileIdle = currentValue (at the end of the ramps, the value will stay constant)
+            self.setBitString(0x40400060, len(times), 20, 4)                #PWM0 number of ramps
+            self.setBitString(0x40400020, digitalPinTrigger, 4, 4)          #PWM0 digital pin trigger
+            self.setBitString(0x40400020, enable, 0, 2)                     #either enable the ramp, or use the DC value
+            
             
 
 def segmentedCoefficient(x,y):
+    '''
+        transforms the segmented function (x,y) into the list of ramps y[i](x) = q[i] + (s[i] - x * m[i]),
+        s[i] is the start input value of the ramp
+        q[i] is the start output value of the ramp ( y[i](s[i]) = q[i])
+        m[i] is the slope of the ramp
+    '''
     a = x[0:len(x)-1]
     b = x[1:]
     c = y[0:len(y)-1]

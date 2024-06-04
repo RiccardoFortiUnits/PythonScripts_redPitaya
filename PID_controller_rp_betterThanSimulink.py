@@ -12,12 +12,13 @@ import subprocess
 from redPitayaInterface import ShellHandler
 from datetime import datetime
 import shutil
+import os
 
 connection = ShellHandler()
 
 def connect():
     global connection
-    connection.modifiedConnection()
+    connection.standardConnection()
     B_setPidValues["state"] = "active"
     B_updateFpga["state"] = "active"
     canvas.itemconfig(indicatore, fill='green')
@@ -53,27 +54,33 @@ def change_compile_n_sendFpga(*args):
     global compile_n_sendFpga
     compile_n_sendFpga = not compile_n_sendFpga
     
+usedFpga = "multiRamp 04_06_2024 11_14.bit.bin"
+    
 def loadNewFpga():
     global compile_n_sendFpga
     
     newFpgaName = T_FpgaName.get()
     
     if compile_n_sendFpga:
-        newFpgaName = newFpgaName + datetime.now().strftime(" %d_%m_%Y %H_%M")+".bit.bin"
+        try:
+            newFpgaName = newFpgaName + datetime.now().strftime(" %d_%m_%Y %H_%M")+".bit.bin"
+            
+            backupSaveFolder = "C:/Users/lastline/Documents/backupFpgaBinaries/"
         
-        backupSaveFolder = "C:/Users/lastline/Documents/backupFpgaBinaries/"
-    
-        #execute the batch that converts the bitstream to one usable by the redPitaya
-        batFilePath="C:/Xilinx/Vivado/2020.1/bin/create_RP_binFile.bat"
-        p = subprocess.Popen(batFilePath, shell=True, stdout = subprocess.PIPE)
-        stdout, stderr = p.communicate()
-    
-        #save a backup of the newly created binary
-        shutil.copyfile("C:/Git/redPitayaFpga/prj/v0.94/project/redpitaya.runs/impl_1/red_pitaya_top.bit.bin", 
-                        backupSaveFolder + newFpgaName)
+            #execute the batch that converts the bitstream to one usable by the redPitaya
+            batFilePath="D:/Xilinx/Vivado/2020.1/bin/create_RP_binFile.bat"
+            p = subprocess.Popen(batFilePath, shell=True, stdout = subprocess.PIPE)
+            stdout, stderr = p.communicate()
+        
+            backupSaveFolder += newFpgaName
+            #save a backup of the newly created binary
+            shutil.copyfile("C:/Git/redPitayaFpga/prj/v0.94/project/redpitaya.runs/impl_1/red_pitaya_top.bit.bin", 
+                            backupSaveFolder)
+        except:
+            backupSaveFolder = os.path.dirname(os.path.abspath(__file__)) +"\\"+ usedFpga
     
         #open an ssh connection, send the selected binary and execute it
-        connection.copyFile(backupSaveFolder + newFpgaName, newFpgaName)
+        connection.copyFile(backupSaveFolder, newFpgaName)
         
     connection.execute("/opt/redpitaya/bin/fpgautil -b '"+newFpgaName.replace(" ","\ ")+"'")
 
@@ -169,7 +176,7 @@ B_setPidValues = tk.Button(finestra, text="Enable PID", command=togglePID)
 #creazione dei gestori dell'update FPGA
 B_updateFpga = tk.Button(finestra, text="Aggiorna FPGA", command=loadNewFpga)
 T_FpgaName = tk.Entry(finestra)
-T_FpgaName.insert(0, "digPinRamp 23_05_2024 11_27.bit.bin")
+T_FpgaName.insert(0, usedFpga)
 
 def elListToDictionary(elList):
     d = {}
@@ -178,15 +185,15 @@ def elListToDictionary(elList):
     return d
 
 elements = elListToDictionary([\
-    element("Kp", connection.pidSetProportional, -0.01),\
-    element("Ki", connection.pidSetIntegral, -0.001),\
+    element("Kp", connection.pidSetProportional, 0.01),\
+    element("Ki", connection.pidSetIntegral, 0.001),\
     element("Kd", connection.pidSetDerivative, 0.00),\
     element("setpoint", connection.pidSetSetPoint, 0.0),\
     ])
 toggles = elListToDictionary([\
     toggle("PWM delay", lambda x,y,z: print("not implemented yet"),True,False, 20),\
     toggle("PWM offset", connection.pidSetPwmSetpoint,True,False, 0),\
-    toggle("PWM ramp", connection.pidSetPWMRamp,True,False, "[0,1.8,4e-3,0]"),\
+    toggle("PWM ramp", connection.pidSetPWMRamp0,True,False, "[0,1.8,1.8,0][10e-6,4e-3,10e-6][0]"),\
     toggle("PWM linearizer", connection.pidSetPWMLinearizer, True,False, "[0,0.15,0.75,1][0,1,1,0]"),\
     # toggle("DAC1 ramp", lambda x,y,z: print("not implemented yet"),True,False, "[0,1.8,4e-3]"),\
     toggle("ADC0 filter", connection.pidSetGenFilter,True,False, "[0.01,0][1,0.99]"),\
