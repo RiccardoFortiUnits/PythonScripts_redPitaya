@@ -117,7 +117,8 @@ class ShellHandler:
         
         # Remove the command and prompt lines from the response
         lines = response.splitlines()
-        response = '\n'.join(lines[2:len(lines) - 1])
+        # print(lines)
+        response = '\n'.join(lines[1:len(lines) - 1])
         
         return response
     
@@ -260,6 +261,8 @@ class ShellHandler:
     def pidSetCommonModeReject(self, enable):
         ShellHandler.configValValue = ShellHandler.configValValue & ~(0x1 << 18) | (enable << 18)
         self.pidSetValue(0x40300004, 1, ShellHandler.configValValue)
+    def pidSetPidDisabler(self, enable):
+        self.setBit(0x4030000C, enable, 0)
         
     def pidSetGenFilter(self, enable, coefficientString):
         maxCoefficients = 8

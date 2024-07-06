@@ -13,15 +13,23 @@ from redPitayaInterface import ShellHandler
 from datetime import datetime
 import shutil
 import os
+import time
 
 connection = ShellHandler()
 
+usedFpga = "" #= 'multiRamp 12_06_2024 11_57.bit.bin'
+
 def connect():
-    global connection
+    global connection, usedFpga
     connection.standardConnection()
     B_setPidValues["state"] = "active"
     B_updateFpga["state"] = "active"
     canvas.itemconfig(indicatore, fill='green')
+    if(usedFpga == ""):
+        time.sleep(0.5)
+        text = connection.execute("ls -t | head -1")
+        usedFpga = str(text)
+    T_FpgaName.insert(0, usedFpga)
 
 def disconnect():
     # Code to execute when the window is closed
@@ -54,7 +62,6 @@ def change_compile_n_sendFpga(*args):
     global compile_n_sendFpga
     compile_n_sendFpga = not compile_n_sendFpga
     
-usedFpga = "multiRamp 04_06_2024 11_14.bit.bin"
     
 def loadNewFpga():
     global compile_n_sendFpga
@@ -176,7 +183,6 @@ B_setPidValues = tk.Button(finestra, text="Enable PID", command=togglePID)
 #creazione dei gestori dell'update FPGA
 B_updateFpga = tk.Button(finestra, text="Aggiorna FPGA", command=loadNewFpga)
 T_FpgaName = tk.Entry(finestra)
-T_FpgaName.insert(0, usedFpga)
 
 def elListToDictionary(elList):
     d = {}
@@ -193,7 +199,7 @@ elements = elListToDictionary([\
 toggles = elListToDictionary([\
     toggle("PWM delay", lambda x,y,z: print("not implemented yet"),True,False, 20),\
     toggle("PWM offset", connection.pidSetPwmSetpoint,True,False, 0),\
-    toggle("PWM ramp", connection.pidSetPWMRamp0,True,False, "[0,1.8,1.8,0][10e-6,4e-3,10e-6][0]"),\
+    toggle("PWM ramp", connection.pidSetPWMRamp0,True,False, "[0,1.8,1.8,0][5e-3,4e-3,5e-3][0]"),\
     toggle("PWM linearizer", connection.pidSetPWMLinearizer, True,False, "[0,0.15,0.75,1][0,1,1,0]"),\
     # toggle("DAC1 ramp", lambda x,y,z: print("not implemented yet"),True,False, "[0,1.8,4e-3]"),\
     toggle("ADC0 filter", connection.pidSetGenFilter,True,False, "[0.01,0][1,0.99]"),\
@@ -201,6 +207,7 @@ toggles = elListToDictionary([\
     toggle("DAC0 offset", connection.asgSetOffset, True, False,  1),\
     # toggle("DAC1 offset", connection.asgSetOffset2, True, False,  1),\
     toggle("common mode", connection.pidSetCommonModeReject,False),\
+    toggle("pid_stopper", connection.pidSetPidDisabler,False),\
     ])
 enumToggles = elListToDictionary([\
     enumToggle("feedback", ["no feedback", "PWM negative feedback", "PWM positive feedback", "no feedback, negated output"], connection.pidSetFeedback),\
@@ -227,7 +234,7 @@ totalGrid = \
     [elements["Kp"],        toggles["DAC0 offset"],         toggles["PWM offset"]        ],
     [elements["Ki"],        toggles["DAC0 linearizer"],     toggles["PWM linearizer"]    ],
     [elements["Kd"],        toggles["ADC0 filter"],         toggles["PWM ramp"]          ],
-    [elements["setpoint"],  None,                           None                         ],
+    [elements["setpoint"],  None,                           toggles["pid_stopper"]       ],
     [B_setPidValues,        None,                           None                         ],
     [B_updateFpga,          T_FpgaName,                     enumToggles["load/send FPGA"]],
     [indicatore],
