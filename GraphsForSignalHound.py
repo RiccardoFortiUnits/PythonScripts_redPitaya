@@ -8,6 +8,7 @@ import spectrumAnalyser as sa
 from spectrumAnalyser import getSpectrumAnalysis_signalHound
 from spectrumAnalyser import getSpectrumAnalysis_ltSpice
 from spectrumAnalyser import getSpectrumAnalysis_matlabNoise
+import numpy as np
 import lecroyInterface
 import os
 import tkinter
@@ -27,7 +28,7 @@ else:
     for path in folder_path:
         extension = os.path.splitext(path)[-1]
         name = os.path.basename(path)
-        outputImpedance = 50#100 if ("floor" in os.path.basename(path)) else 50
+        outputImpedance = 50# if ("floor" in os.path.basename(path)) else 50
         if extension == '.txt':
             x, y = getSpectrumAnalysis_ltSpice(path)
         if extension == '.csv':

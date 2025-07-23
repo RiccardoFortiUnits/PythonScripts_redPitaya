@@ -17,11 +17,47 @@ import time
 
 connection = ShellHandler()
 
+
+
+
+
+
+
+#                               OCIO! check the file path used by create_RP_binFile.bat!!!
+
+
+
+
+
+
+
+
+
+
+
+
+# newFpgaName = "doublePidFiltered" + datetime.now().strftime(" %d_%m_%Y %H_%M")+".bit.bin"
+
+# backupSaveFolder = "C:/Users/lastline/Documents/backupFpgaBinaries/"
+
+# projectBinFilePath = "C:/Git/redPitayaFpga/prj/v0.94/project/redpitaya.runs/impl_1/" #"C:/Git/pyrpl/pyrpl/fpga/project/pyrpl.runs/impl_1/"
+
+# #execute the batch that converts the bitstream to one usable by the redPitaya
+# batFilePath="D:/Xilinx/Vivado/2020.1/bin/create_RP_binFile.bat " + projectBinFilePath
+# p = subprocess.Popen(batFilePath, shell=True, stdout = subprocess.PIPE)
+# stdout, stderr = p.communicate()
+
+# backupSaveFolder += newFpgaName
+# #save a backup of the newly created binary
+                 
+# shutil.copyfile(projectBinFilePath + "red_pitaya_top.bit.bin", backupSaveFolder)
+
+
 usedFpga = "" #= 'multiRamp 12_06_2024 11_57.bit.bin'
 
 def connect():
     global connection, usedFpga
-    connection.standardConnection()
+    connection.intensityStabilization()
     B_setPidValues["state"] = "active"
     B_updateFpga["state"] = "active"
     canvas.itemconfig(indicatore, fill='green')
@@ -72,7 +108,11 @@ def loadNewFpga():
         try:
             newFpgaName = newFpgaName + datetime.now().strftime(" %d_%m_%Y %H_%M")+".bit.bin"
             
-            backupSaveFolder = "C:/Users/lastline/Documents/backupFpgaBinaries/"
+            if "/" in newFpgaName:
+                backupSaveFolder = os.path.dirname(newFpgaName)
+                newFpgaName = os.path.basename(newFpgaName)
+            else:
+                backupSaveFolder = "C:/Users/lastline/Documents/backupFpgaBinaries/"
         
             #execute the batch that converts the bitstream to one usable by the redPitaya
             batFilePath="D:/Xilinx/Vivado/2020.1/bin/create_RP_binFile.bat"
@@ -89,7 +129,7 @@ def loadNewFpga():
         #open an ssh connection, send the selected binary and execute it
         connection.copyFile(backupSaveFolder, newFpgaName)
         
-    connection.execute("/opt/redpitaya/bin/fpgautil -b '"+newFpgaName.replace(" ","\ ")+"'")
+    connection.execute("/opt/redpitaya/bin/fpgautil -b '"+newFpgaName.replace(" ","\\ ")+"'")
 
 class element:
     def __init__(self, name, settingFunction, initialValue = 0.):

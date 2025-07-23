@@ -100,10 +100,10 @@ class ShellHandler:
     def connect(self, ssh_siteAddress = "rp-xxxxxx.local"):
         #example of ssh_siteAddress: 
         keyData = find_line_starting_with_string(ShellHandler.known_hosts_file, 
-                            ssh_siteAddress, "ecdsa-sha2-nistp256").split(" ")[2]
+                            ssh_siteAddress, "ssh-ed25519").split(" ")[2]
         # keyData = b"""AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHTehAYPnnZWXRlnhr/4rgY/jiDpbEvyUv2JVCgHapqWm6N8mDwOV6XJxQr3gPRhGYBNi/rwfi/bkMGfIG/hpeI="""
-        key = paramiko.ECDSAKey(data=decodebytes(bytes(keyData, "utf-8")))
-        self.__init__(ssh_siteAddress, "root", "root", 'ecdsa-sha2-nistp256', key)
+        key = paramiko.Ed25519Key(data=decodebytes(bytes(keyData, "utf-8")))
+        self.__init__(ssh_siteAddress, "root", "root", 'ssh-ed25519', key)
         self.execute("echo")
         
     def standardConnection(self):
@@ -111,6 +111,9 @@ class ShellHandler:
 
     def modifiedConnection(self):
         self.connect("rp-f0be72.local")
+    
+    def intensityStabilization(self):
+        self.connect("rp-f0bd67.local")     
 
     def execute(self, cmd, delayTime = 0.05):
         response = self.roughCommand(cmd,delayTime=delayTime)
@@ -118,6 +121,8 @@ class ShellHandler:
         # Remove the command and prompt lines from the response
         lines = response.splitlines()
         # print(lines)
+        #warning! when using different pitayas, check how the response is structured! you might have to change this line of code to
+        #  response = '\n'.join(lines[ 2 :len(lines) - 1])
         response = '\n'.join(lines[1:len(lines) - 1])
         
         return response
@@ -183,6 +188,7 @@ class ShellHandler:
     #generic function
     def pidSetValue(self, address, multiplier, value, shift=0):
         value_toFpgaNumber = int(value * multiplier) << shift
+        print(f"{hex(address)}, {hex(value_toFpgaNumber)}")
         self.execute("monitor "+ str(address) + " " + str(value_toFpgaNumber))
     
     
@@ -207,7 +213,12 @@ class ShellHandler:
         return n
     
     def getBitString(self, address, startBit, stringSize, convertToSigned = False):
-        register = int(self.execute("monitor "+ str(address)), 0x10)        
+        try:
+            register = int(self.execute("monitor "+ str(address)), 0x10)        
+        except Exception as e:
+            print("check the received message in function execute()")
+            print(e)
+            raise Exception("check the received message in function execute()")
         bitMask = ((1 << stringSize) - 1)
 
         value =  (register >> startBit) & bitMask

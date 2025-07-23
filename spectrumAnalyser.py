@@ -149,7 +149,7 @@ def getRMS(y, minFreq = -1, maxFreq = -1, x = None):
     return np.sqrt(np.sum(sq))
         
 
-def plotNSD(frequencies, spectrum, paths = None, axisDimensions = "V/√Hz", legendPosition = "upper right", logPlot = True, linearX=False, linearY=False, showAverageLines = False):
+def plotNSD(frequencies, spectrum, paths = None, axisDimensions = "V/√Hz", legendPosition = "upper right", logPlot = True, linearX=False, linearY=False, showAverageLines = False, savePath = None, showPlot = True):
     
     #let's work with a list of curves to plot
     if frequencies.__class__ != list:
@@ -184,6 +184,12 @@ def plotNSD(frequencies, spectrum, paths = None, axisDimensions = "V/√Hz", leg
     else:
         plt.xlabel("Hz")
         plt.ylabel(axisDimensions)
+    if savePath is not None:
+        if not os.path.exists(os.path.dirname(savePath)):
+            os.makedirs(os.path.dirname(savePath))
+        plt.savefig(savePath, dpi=300, bbox_inches='tight')
+    if showPlot:
+        plt.show()
     
     # plt.show()
 def plotSignal(x, y, paths = None):
@@ -288,7 +294,7 @@ class measure:
     RINCoeff = 2# 1# I'm not sure if I have to multiply by 2 when going from a PSD to the RIN (RIN = 2*PSD/Pow^2, right?)
                                 #anyway, with this, I can add and remove this multiplier more easily
     
-    rho_shotNoise = 1.26577e-9# √(2*e*photodiodeResponsivity)
+    rho_shotNoise = 1.26577e-9# √(2*e/photodiodeResponsivity)
     photodiodeResponsivity = 0.2# A/W
     maxSetpoint = 1.8# V
     stage1Saturation = 3.5# V
