@@ -32,7 +32,7 @@ else:
             (x, y) = sa.getSignalFromCsv(path)
             data = y
             time = x[-1]
-        if extension == '.log':
+        elif extension == '.log':
             x, data = lecroyInterface.getDataFromMultimeterLogFile(path) 
             time = x[-1]
         else:

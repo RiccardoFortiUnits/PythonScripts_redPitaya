@@ -24,6 +24,10 @@ files = [
 [1e6,	baseAmpl,	open,	lowPower,			"d:/lastline/measuresOnIntensityStabilization_21_7_25/21_7_25/test_1MHz/std_open loop_setpoint0.24_iutput.7.csv"],
 [1e6,	baseAmpl,	open,	HighPower,			"d:/lastline/measuresOnIntensityStabilization_21_7_25/21_7_25/test_1MHz/std_WattLevel_open loop_setpoint0.24_iutput.7.csv"],
 ]
+
+'''TIA values'''
+g1, g2, ge, photodiodeResponsivity = 3.9e3, 106, 212, .2
+
 def getFileNames(frequency, amplifier, isLoopClosed, powerLevel, returnPropertiest = False):
 	elements = [frequency, amplifier, isLoopClosed, powerLevel]
 	for i in range(len(elements)):
@@ -43,13 +47,13 @@ def plotFiles(frequency, amplifier, isLoopClosed, powerLevel, savePath = None, s
 	allNames, allProperties = getFileNames(frequency, amplifier, isLoopClosed, powerLevel, returnPropertiest = True)
 	X, Y, label = [], [], []
 	for i in range(len(allNames)):
-		x, y = sa.getSpectrumAnalysis_signalHound(allNames[i], outputImpedance_Ohm = 50)
+		x, y = sa.getSpectrumAnalysis_signalHound_RIN(allNames[i], g1, g2, ge, photodiodeResponsivity, outputImpedance_Ohm = 50)
 		X.append(x)
 		Y.append(y)
 		# label.append(f"{allProperties[i][0]//1e3}kHz, {"prototype" if allProperties[i][1] else "baseAmpl"}, {'closed' if allProperties[i][2] else 'open'}, {'low' if allProperties[i][3] == lowPower else 'high'} power")
 		label.append(f"{'prototype' if allProperties[i][1]==prototype else 'reference'}, {'closed' if allProperties[i][2]==closed else 'open'} loop, {'low' if allProperties[i][3] == lowPower else 'high'} power")
 	
-	sa.plotNSD(X,Y, paths = label, savePath= savePath, showPlot=showPlot)
+	sa.plotNSD(X,Y, paths = label, savePath= savePath, showPlot=showPlot, linearY=True, axisDimensions = "dB/Hz")
 
 if __name__ == "__main__":
 	plotFiles(200e3, [prototype, baseAmpl], [open, closed], [lowPower], "d:/lastline/measuresOnIntensityStabilization_21_7_25/21_7_25/23_7_25 lowPower.png")

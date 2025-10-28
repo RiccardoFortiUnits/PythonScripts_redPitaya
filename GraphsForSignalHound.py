@@ -5,7 +5,7 @@ Created on Tue Nov 21 11:29:48 2023
 @author: lastline
 """
 import spectrumAnalyser as sa
-from spectrumAnalyser import getSpectrumAnalysis_signalHound
+from spectrumAnalyser import getSpectrumAnalysis_signalHound, getSpectrumAnalysis_signalHound_RIN
 from spectrumAnalyser import getSpectrumAnalysis_ltSpice
 from spectrumAnalyser import getSpectrumAnalysis_matlabNoise
 import numpy as np
