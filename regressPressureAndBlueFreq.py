@@ -143,7 +143,7 @@ print(f"coefficients: {q}, mse: {mse}")
 plt.plot(t, blue, label="blue")
 plt.plot(t, vr.estimate(x, q), label="estimated (green + pressure)", c="red")
 plt.plot(t, vr.estimate(np.column_stack((np.ones_like(pressure) * np.mean(pressure), green)).T, q), label="estimated (green only)", c="green")
-plt.plot(t, vr.estimate(np.column_stack((pressure, np.ones_like(pressure) * np.mean(green))).T, q), label="estimated (pressure only)", c="orange")
+plt.plot(t, vr.estimate(np.column_stack((pressure, np.ones_like(pressure) * np.mean(green))).T, q), label=f"estimated (pressure only, cp={q[1]})", c="orange")
 
 plt.xlabel("time (h)")
 plt.ylabel("frequency variation (MHz)")

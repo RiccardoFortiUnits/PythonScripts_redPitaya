@@ -47,9 +47,9 @@ for j in range(3):
     times = times[sort]
     allTimes.append(times)
     atoms.append(nAtoms)
-    plt.plot(nAtoms, label=f"absorption imaging freq: {xs[j]}")
-plt.legend()
-plt.show()
+#     plt.plot(nAtoms, label=f"absorption imaging freq: {xs[j]}")
+# plt.legend()
+# plt.show()
 atoms = np.array(atoms)
 allTimes = np.array(allTimes)
 
@@ -79,11 +79,22 @@ def gaussian_from_three_points(y):
     return x0
     
 # plt.plot(meanFit(atoms))
-plt.plot(np.linspace(0,2.7,len(atoms[0])), gaussian_from_three_points(atoms), label="3-point gaussian fit")
-plt.xlabel("time (h)")
-plt.ylabel("Frequency drift (MHz)")
-plt.legend()
+t = np.linspace(0,2.7,len(atoms[0]))
+gf = gaussian_from_three_points(atoms)
+# plt.plot(t, gf, label="3-point gaussian fit")
+# plt.xlabel("time (h)")
+# plt.ylabel("Frequency drift (MHz)")
+# plt.legend()
+# plt.show()
+
+import allantools
+import allan_variance
+dt = (t[1]-t[0]) * 3600
+a, b, c, d = allantools.oadev(gf*1e6, 1/dt, 'freq', 'octave')
+plt.loglog(a, b, 'o-')
+# plt.loglog(a,b)
 plt.show()
+
 
 
 
