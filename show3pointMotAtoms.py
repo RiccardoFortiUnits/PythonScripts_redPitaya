@@ -81,6 +81,11 @@ def gaussian_from_three_points(y):
 # plt.plot(meanFit(atoms))
 t = np.linspace(0,2.7,len(atoms[0]))
 gf = gaussian_from_three_points(atoms)
+gf *= 1e6
+
+import pandas as pd
+pd.DataFrame({'t (s)': t * 3600, 'frequency (Hz)': gf}).to_csv(f"d:/lastline/scanCavityMeasurements/wavemeterAndPressure/threePointGaussianFit_4_3_26_raw.csv", index=False)
+		
 # plt.plot(t, gf, label="3-point gaussian fit")
 # plt.xlabel("time (h)")
 # plt.ylabel("Frequency drift (MHz)")
@@ -90,8 +95,10 @@ gf = gaussian_from_three_points(atoms)
 import allantools
 import allan_variance
 dt = (t[1]-t[0]) * 3600
-a, b, c, d = allantools.oadev(gf*1e6, 1/dt, 'freq', 'octave')
-plt.loglog(a, b, 'o-')
+a, b, c, d = allantools.oadev(gf, 1/dt, 'freq', 'all')
+plt.loglog(a, b)
+plt.xlabel("time (s)")
+plt.ylabel("allan deviation (Hz)")
 # plt.loglog(a,b)
 plt.show()
 
