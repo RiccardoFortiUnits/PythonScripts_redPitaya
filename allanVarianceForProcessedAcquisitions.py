@@ -89,6 +89,26 @@ dataColumn_l.append(1)
 removeSamplesHigherThan_l.append(None)
 #'''
 
+# '''
+# 3-point gaussian fit of spectroscopy
+name_t.append("closed loop (atom spectroscopy)")
+filesToCombine_l.append([
+	"d:/lastline/scanCavityMeasurements/wavemeterAndPressure/threePointGaussianFit_4_3_26_raw.csv",
+])
+dataColumn_l.append(1)
+removeSamplesHigherThan_l.append(None)
+#'''
+
+# '''
+# 17-point gaussian fit of spectroscopy, but the green kept unlocking
+name_t.append("closed loop (atom spectroscopy, unstable green)")
+filesToCombine_l.append([
+	"d:/lastline/scanCavityMeasurements/wavemeterAndPressure/allAtomDriftShotValues_10_3_26_raw.csv",
+])
+dataColumn_l.append(1)
+removeSamplesHigherThan_l.append(None)
+#'''
+
 def removeOutliars(x, windowSize):
 	x = np.asarray(x)
 	if windowSize % 2 == 0:
@@ -219,6 +239,7 @@ def loadRawFiles(plot, forcedDt = None):
 			else:
 				df = pd.read_csv(file_path, delimiter=delimiter, header=0, usecols=range(num_columns))
 			t = df[df.columns[0]]
+			t -= t[0]
 			if removeSamplesHigherThan is not None:
 				rsht = removeSamplesHigherThan[len(fileIntersections)]
 				if rsht != -1:
@@ -276,8 +297,8 @@ def loadRawFiles(plot, forcedDt = None):
 		x=totalSignal
 		t = np.linspace(0,len(x)*dt,len(x),endpoint=False)
 		www = 0
-		if name == "AOM-scan (spectrum peak)":
-			www = .4e6
+		# if name == "AOM-scan (spectrum peak)":
+		# 	www = .4e6
 		ttt=0
 		if name == "open loop (spectrum peak)":
 			ttt = -.3
@@ -312,6 +333,7 @@ def plotAvar():
 		# plt.loglog(tau, avar, '.', label=name)
 	plt.xlabel("Averaging time, s")
 	plt.ylabel(r"Beatnote Allan deviation ($Hz / \sqrt{s}$)")
+	plt.ylabel(r"Beatnote Allan deviation (Hz)")
 	plt.legend()
 	plt.show()
 
@@ -355,14 +377,14 @@ def plotHistogram():
 	global name_t, filesToCombine_l, dataColumn_l, removeSamplesHigherThan_l
 	plt.figure("histogram")
 	for name, x, dt in zip(name_t, totalSignal_l, dt_l):
-		x = np.asarray(x)
+		x = np.asarray(x) / 1e6
 		x_d = x - np.mean(x)
 		x_d = np.sort(x_d)
 		# plt.plot(x_d/1e6, np.linspace(0,1,len(x_d)), label=name, alpha=0.7)
 		# hist, bin_edges = np.histogram(x_d, bins=70, density=True)
 		# bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 		bin_centers, hist = smoothPDF(x_d)
-		plt.plot(bin_centers / 1e6, hist, label=name, alpha=0.7)
+		plt.plot(bin_centers, hist, label=name, alpha=0.7)
 	plt.xlabel("Beatnote Frequency (MHz)")
 	plt.ylabel("distribution")
 	plt.grid(True, which="both", ls=":", alpha=0.3)
@@ -378,8 +400,12 @@ def plotHistogram():
 # 			 lambda *args: (loadRawFiles(True, 5), plotHistogram()))
 
 #allan variance: open, closed, closed non-normalized
-execOnSubset(["closed loop (spectrum peak)", "closed loop, peaks non-normalized (phasemeter)", "open loop (spectrum peak)"], 
-			 lambda *args: (loadRawFiles(False, 5), plotAvar()))
+execOnSubset(["closed loop (spectrum peak)", "closed loop, peaks non-normalized (phasemeter)", "open loop (spectrum peak)", "closed loop (atom spectroscopy)", "closed loop (atom spectroscopy, unstable green)"], 
+			 lambda *args: (loadRawFiles(True, 10), plotAvar()))
+			 
+#allan variance: closed vs spectroscopy acquisitions, closed non-normalized
+# execOnSubset(["closed loop (spectrum peak)", "closed loop (atom spectroscopy)", "closed loop (atom spectroscopy, unstable green)"], 
+# 			 lambda *args: (loadRawFiles(True, 10), plotAvar()))
 
 # #PSD: open, closed (both phasemeter and spectrum peak), noise floor
 # execOnSubset(["closed loop (spectrum peak)", "closed loop (phasemeter)", "open loop (spectrum peak)", "piezo scan system noise floor"], 

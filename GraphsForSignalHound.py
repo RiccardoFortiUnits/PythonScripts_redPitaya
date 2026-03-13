@@ -46,7 +46,8 @@ else:
             
         #if extension == '.ini':
             #do nothing
-                
+        rms = np.sqrt(np.sum(y**2) * (x[1] - x[0]))
+        print(f"{path} RMS: {rms}V")
         X.append(x)
         Y.append(y)
         
