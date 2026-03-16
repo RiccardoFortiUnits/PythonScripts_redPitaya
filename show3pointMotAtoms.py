@@ -5,12 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime
-from regressPressureAndBlueFreq import readPressure, alignSignals
-from volterraRegressor import volterraRegressor
 
-directory = "\\\\ARQUS-CAM/Experiments/ytterbium174/2026/03/10/C_Yb174_MOT_stability/shots"
-savedCsvFile = "d:/lastline/scanCavityMeasurements/wavemeterAndPressure/allAtomDriftShotValues_10_3_26.csv"
-pressureFile = "d:/lastline/scanCavityMeasurements/wavemeterAndPressure/Ruuvi Vexlum_20260311T144916+0100.csv"
+directory = "\\\\ARQUS-CAM/Experiments/ytterbium174/2026/03/14/B_Yb174_MOT_stability/shots"
+experimentNumber = "_0002_"
+savedCsvFile = "d:/lastline/scanCavityMeasurements/wavemeterAndPressure/allAtomDriftShotValues_14_3_26.csv"
+pressureFile = "d:/lastline/scanCavityMeasurements/wavemeterAndPressure/RuuviTag 171A_20260316T092055+0100.csv"
 files = glob.glob(os.path.join(directory, "*.h5"))
 data = {
 "indexes" : [],
@@ -20,7 +19,7 @@ data = {
 }
 '''
 for fpath in files:
-    if "_0333_" in fpath:
+    if experimentNumber in fpath:
         with h5py.File(fpath, "r") as h5:
             try:
                 group = h5["results/MOT_in_situ"]
@@ -29,7 +28,7 @@ for fpath in files:
                 data["indexes"].append(globGroup.attrs["spectroscopy_number"])
                 data["freq"].append(globGroup.attrs["abs_imaging_freq"])
                 dateTtime = h5.attrs["run time"]#format: YYYYMMDD"T"hhmmss.ffffff I couldn't format it directly, so let's convert it to a more manageable format
-                normalFormatTime = f"{dateTtime[:2]}.{dateTtime[2:4]}.{dateTtime[4:6]} {dateTtime[7:9]}:{dateTtime[9:11]}:{dateTtime[11:]}"
+                normalFormatTime = f"{dateTtime[:4]}.{dateTtime[4:6]}.{dateTtime[6:8]} {dateTtime[9:11]}:{dateTtime[11:13]}:{dateTtime[13:]}"
                 time = datetime.strptime(normalFormatTime, "%Y.%m.%d %H:%M:%S.%f").timestamp()
                 data["timings"].append(float(time))
             except:
@@ -121,27 +120,28 @@ t = allTimes[0]
 # t -= t[0]
 mu, error = lorentzian_fit(xs, atoms)
 pd.DataFrame({"t (s)" : t, "frequency (Hz)" : mu * 1e6}).to_csv(savedCsvFile.replace(".csv", "_raw.csv"), index=False)
-# startingTime = t[0]
-# t -= startingTime
+# # startingTime = t[0]
+# # t -= startingTime
 
-# toKeep = error < 19999.4
+toKeep = np.logical_and(error < .4, np.logical_and(mu < 265, mu > 235))
 # toKeep[139:210] = False
 # toKeep[737:] = False
-# mu = mu[toKeep]
-# error = error[toKeep]
-# totalT = t[-1] - t[0]
-# dt = totalT / len(t)
-# t = np.arange(np.sum(toKeep)) * dt
-# t /= 3600
-# # t=t[toKeep]
-# # plt.plot(np.linspace(0,12,len(atoms[0])), mu, label=f"{count}-point Lorenzian fit")
-# plt.errorbar(t, mu, yerr=error, fmt=".", label=f"{count}-point Lorenzian fit")
-# # plt.plot(np.linspace(0,12,len(atoms[0])), meanFit(atoms), label="weighted-average fit")
-# plt.xlabel("time (h)")
-# plt.ylabel("Frequency drift (MHz)")
-# plt.legend()
-# plt.show()
+mu = mu[toKeep]
+error = error[toKeep]
+t=t[toKeep]
+# mu=mu[t-t[0]<1.92*3600]
+# error=error[t-t[0]<1.92*3600]
+# t=t[t-t[0]<1.92*3600]
+# plt.plot(np.linspace(0,12,len(atoms[0])), mu, label=f"{count}-point Lorenzian fit")
+plt.errorbar(t / 3600, mu, yerr=error, fmt=".", label=f"{count}-point Lorenzian fit")
+# plt.plot(np.linspace(0,12,len(atoms[0])), meanFit(atoms), label="weighted-average fit")
+plt.xlabel("time (h)")
+plt.ylabel("Frequency drift (MHz)")
+plt.legend()
+plt.show()
 
+from regressPressureAndBlueFreq import readPressure, alignSignals
+from volterraRegressor import volterraRegressor
 pt, p = readPressure(pressureFile)
 t, (mu, p) = alignSignals((t, mu), (pt, p))
 t -= t[0]
@@ -154,10 +154,10 @@ ax2 = ax1.twinx()
 ax2.plot(t, p, color='orange', label="room pressure")
 ax2.set_ylabel('Pressure (hPa)')
 
-vr = volterraRegressor([1])
+vr = volterraRegressor([11])
 x = p[None,:]
-# x -= np.mean(x)
-y = mu# - np.mean(mu)
+x -= np.mean(x)
+y = mu - np.mean(mu)
 q, mse = vr.regrade(x, y, True)
 print(f"coefficients: {q}, mse: {mse}")
 # plt.plot(t, y, label="blue")
