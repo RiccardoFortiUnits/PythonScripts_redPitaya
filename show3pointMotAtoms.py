@@ -8,8 +8,8 @@ from datetime import datetime
 
 directory = "\\\\ARQUS-CAM/Experiments/ytterbium174/2026/03/14/B_Yb174_MOT_stability/shots"
 experimentNumber = "_0002_"
-savedCsvFile = "d:/lastline/scanCavityMeasurements/wavemeterAndPressure/allAtomDriftShotValues_14_3_26.csv"
-pressureFile = "d:/lastline/scanCavityMeasurements/wavemeterAndPressure/RuuviTag 171A_20260316T092055+0100.csv"
+savedCsvFile = "d:/lastline/scanCavityMeasurements/wavemeterAndPressure/allAtomDriftShotValues_16_3_26.csv"
+pressureFile = "d:/lastline/scanCavityMeasurements/wavemeterAndPressure/RuuviTag 171A_20260317T090345+0100.csv"
 files = glob.glob(os.path.join(directory, "*.h5"))
 data = {
 "indexes" : [],
@@ -114,7 +114,9 @@ def lorentzian_fit(xs, y):
         except:
             pass
     return outs[:,0], error
-
+def normalize01(x):
+    return (x-x.min()) / (x.max() - x.min())
+    
 # plt.plot(meanFit(atoms))
 t = allTimes[0]
 # t -= t[0]
@@ -140,28 +142,39 @@ plt.ylabel("Frequency drift (MHz)")
 plt.legend()
 plt.show()
 
-from regressPressureAndBlueFreq import readPressure, alignSignals
+from regressPressureAndBlueFreq import readPressure, alignSignals, readPTh
 from volterraRegressor import volterraRegressor
-pt, p = readPressure(pressureFile)
-t, (mu, p) = alignSignals((t, mu), (pt, p))
+pt, p, T, h = readPTh(pressureFile)
+t, (mu, p, T, h) = alignSignals((t, mu), (pt, p), (pt, T), (pt, h))
 t -= t[0]
-plt.plot(t, mu, label="laser frequency")
+plt.plot(t, mu - np.mean(mu), label="laser frequency")
+# plt.plot(t, normalize01(mu - np.mean(mu)), label="laser frequency")
+# plt.plot(t, normalize01(p - np.mean(p)), label="p")
+# plt.plot(t, normalize01(T - np.mean(T)), label="T")
+# plt.plot(t, normalize01(h - np.mean(h)), label="h")
 plt.ylabel("frequency (MHz)")
 plt.xlabel("time (s)")
 # pt -= startingTime
 ax1 = plt.gca()
-ax2 = ax1.twinx()
-ax2.plot(t, p, color='orange', label="room pressure")
-ax2.set_ylabel('Pressure (hPa)')
+# ax2 = ax1.twinx()
+# ax2.plot(t, p, color='orange', label="room pressure")
+# ax2.set_ylabel('Pressure (hPa)')
 
-vr = volterraRegressor([11])
-x = p[None,:]
-x -= np.mean(x)
+vr = volterraRegressor([1,1,1])
+x = np.column_stack((p, T, h)).T
+x -= np.mean(x, axis=1)[:,None]
 y = mu - np.mean(mu)
 q, mse = vr.regrade(x, y, True)
 print(f"coefficients: {q}, mse: {mse}")
 # plt.plot(t, y, label="blue")
-ax1.plot(t, vr.estimate(x, q), c="red", label=f"estimated frequency (f={q[1]}*p)")
+ax1.plot(t, vr.estimate(x, q), c="red", label=f"estimated frequency (p+T+h)")
+ax1.plot(t, vr.estimate(x, q*np.array([1,1,0,0])), c="orange", label=f"pressure dependence (f={q[1]}*p)")
+ax1.plot(t, vr.estimate(x, q*np.array([1,0,1,0])), c="grey", label=f"temperature dependence (f={q[2]}*T)")
+ax1.plot(t, vr.estimate(x, q*np.array([1,0,0,1])), c="cyan", label=f"humidity dependence (f={q[3]}*h)")
+
+
+# ax1.plot(t, y - vr.estimate(x, q*np.array([1,1,0,0])), c="black", label=f"error")
+
 ax1.legend()
-ax2.legend()
+# ax2.legend()
 plt.show()
